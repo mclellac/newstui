@@ -64,13 +64,6 @@ def load_theme_file_from_config() -> Optional[str]:
         if not name:
             return None
 
-        # Check for bundled theme first
-        bundled_theme_path = os.path.join(os.path.dirname(__file__), "themes", f"{name}.css")
-        if os.path.exists(bundled_theme_path):
-            logger.info(f"Loading bundled theme: {name}")
-            return bundled_theme_path
-
-        # Fallback to user themes directory
         user_theme_path = os.path.join(THEMES_DIR, f"{name}.css")
         if os.path.exists(user_theme_path):
             logger.info(f"Loading user theme: {name}")

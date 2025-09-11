@@ -31,20 +31,14 @@ def main() -> None:
 
     theme_path: Optional[str] = None
     if args.theme:
-        # Check for bundled theme first
-        bundled_theme_path = os.path.join(os.path.dirname(__file__), "themes", f"{args.theme}.css")
-        if os.path.exists(bundled_theme_path):
-            theme_path = bundled_theme_path
+        user_theme_path = os.path.join(THEMES_DIR, f"{args.theme}.css")
+        if os.path.exists(user_theme_path):
+            theme_path = user_theme_path
         else:
-            # Fallback to user themes directory
-            user_theme_path = os.path.join(THEMES_DIR, f"{args.theme}.css")
-            if os.path.exists(user_theme_path):
-                theme_path = user_theme_path
-            else:
-                print(
-                    f"Theme {args.theme} not found; continuing without it.",
-                    file=sys.stderr,
-                )
+            print(
+                f"Theme {args.theme} not found; continuing without it.",
+                file=sys.stderr,
+            )
     else:
         theme_path = load_theme_file_from_config()
 
