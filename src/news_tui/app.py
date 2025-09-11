@@ -1,0 +1,147 @@
+from __future__ import annotations
+
+from typing import Any, Optional
+
+from textual.app import App, ComposeResult
+from textual.binding import Binding
+from textual.containers import Horizontal, Vertical
+from textual.worker import Worker, WorkerState
+from textual.widgets import Footer, Header, ListItem, ListView, Static
+
+from .config import HOME_PAGE_URL
+from .datamodels import Section
+from .fetcher import get_sections_combined, get_stories_from_url
+from .screens import StoryViewScreen
+from .widgets import SectionListItem, StoryListItem
+
+
+class NewsApp(App):
+    TITLE = "News "
+    SUB_TITLE = "News client for abnormies"
+
+    CSS = """
+    /* default minimal styling (users can override with theme CSS) */
+    Screen { background: $surface; color: $text; }
+    Header { background: $primary; color: $text; }
+    Footer { background: $primary-darken-1; color: $text; }
+    #main { layout: horizontal; height: 1fr; padding: 1; }
+    #left { width: 40%; min-width: 30; padding-right: 1; }
+    #right { width: 60%; min-width: 60; padding-left: 1; }
+    .pane-title { text-style: bold; padding-bottom: 1; }
+    ListView { border: none; }
+    ListItem { padding: 0 1; }
+    ListItem:hover { background: $primary-lighten-2; }
+    ListView > ListItem.--highlighted { background: $accent; color: $text; }
+    #story-scroll { padding: 1 0; }
+    """
+
+    BINDINGS = [
+        Binding("q", "quit", "Quit"),
+        Binding("r", "refresh", "Refresh"),
+        Binding("left", "nav_left", "Navigate Left"),
+        Binding("right", "nav_right", "Navigate Right"),
+    ]
+
+    def __init__(self, **kwargs: Any):
+        super().__init__(**kwargs)
+        self.current_section: Optional[Section] = None
+
+    def compose(self) -> ComposeResult:
+        yield Header()
+        # Main horizontal split: left = sections, right = headlines
+        with Horizontal(id="main"):
+            with Vertical(id="left"):
+                yield Static("Sections", classes="pane-title")
+                yield ListView(id="sections-list")
+            with Vertical(id="right"):
+                yield Static("Headlines", classes="pane-title")
+                yield ListView(id="headlines-list")
+        yield Footer()
+
+    def on_mount(self) -> None:
+        # Start loading sections on mount
+        self.run_worker(get_sections_combined, name="sections_loader", thread=True)
+        # focus sections list if possible
+        try:
+            self.query_one("#sections-list").focus()
+        except Exception:
+            pass
+
+    def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
+        name = getattr(event.worker, "name", None)
+        # handle only finished SUCCESS states for sections/headlines
+        if name == "sections_loader" and event.state is WorkerState.SUCCESS:
+            self._handle_sections_loaded(event)
+        elif name == "headlines_loader" and event.state is WorkerState.SUCCESS:
+            self._handle_headlines_loaded(event)
+        elif name == "headlines_loader" and event.state not in (
+            WorkerState.PENDING,
+            WorkerState.RUNNING,
+            WorkerState.SUCCESS,
+        ):
+            # headlines worker finished but not successful => show empty/failure message
+            self._handle_headlines_loaded(event)
+
+    def _handle_sections_loaded(self, event: Worker.StateChanged) -> None:
+        view = self.query_one("#sections-list", ListView)
+        view.clear()
+        sections = getattr(event.worker, "result", None) or [
+            Section("Home", HOME_PAGE_URL)
+        ]
+        for sec in sections:
+            view.append(SectionListItem(sec))
+        if sections:
+            self.current_section = sections[0]
+            # load headlines for the first section
+            self._load_headlines_for_section(self.current_section)
+
+    def _handle_headlines_loaded(self, event: Worker.StateChanged) -> None:
+        view = self.query_one("#headlines-list", ListView)
+        view.clear()
+        stories = getattr(event.worker, "result", None) or []
+        if not stories:
+            view.append(ListItem(Static("[i]No headlines available.[/i]")))
+            return
+        for s in stories:
+            view.append(StoryListItem(s))
+
+    def _load_headlines_for_section(self, section: Section) -> None:
+        if not section:
+            return
+        headlines_view = self.query_one("#headlines-list", ListView)
+        headlines_view.clear()
+        headlines_view.append(ListItem(Static("[i]Loading headlines...[/i]")))
+        self.run_worker(
+            lambda: get_stories_from_url(section.url),
+            name="headlines_loader",
+            thread=True,
+        )
+
+    def on_list_view_selected(self, event: ListView.Selected) -> None:
+        # Section selected -> load headlines. Headline selected -> open StoryViewScreen.
+        if event.list_view.id == "sections-list":
+            if isinstance(event.item, SectionListItem):
+                self.current_section = event.item.section
+                self._load_headlines_for_section(self.current_section)
+        elif event.list_view.id == "headlines-list":
+            if isinstance(event.item, StoryListItem):
+                # push the story screen (separate view)
+                self.push_screen(StoryViewScreen(event.item.story))
+
+    def action_refresh(self) -> None:
+        if self.current_section:
+            self._load_headlines_for_section(self.current_section)
+
+    def action_nav_left(self) -> None:
+        try:
+            if self.query_one("#headlines-list").has_focus:
+                self.query_one("#sections-list").focus()
+        except Exception:
+            pass
+
+    def action_nav_right(self) -> None:
+        try:
+            if self.query_one("#sections-list").has_focus:
+                self.query_one("#headlines-list").focus()
+        except Exception:
+            pass
