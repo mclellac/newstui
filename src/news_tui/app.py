@@ -4,9 +4,10 @@ from typing import Any, Optional
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
+from textual.command import CommandPalette, Hit, Hits, Provider
 from textual.containers import Horizontal, Vertical
 from textual.worker import Worker, WorkerState
-from textual.widgets import Footer, Header, ListItem, ListView, Static
+from textual.widgets import Footer, Header, ListItem, ListView, Static, LoadingIndicator, Rule
 
 from .config import HOME_PAGE_URL
 from .datamodels import Section
@@ -16,17 +17,31 @@ from .themes import THEMES
 from .widgets import SectionListItem, StoryListItem
 
 
+class ThemeProvider(Provider):
+    async def get_hits(self, query: str) -> Hits:
+        for theme_name in THEMES:
+            if query in theme_name:
+                yield Hit(
+                    1,
+                    self.app.action_switch_theme(theme_name),
+                    f"Switch to {theme_name} theme",
+                )
+
+
 class NewsApp(App):
     TITLE = "News "
     SUB_TITLE = "News client for abnormies"
 
     CSS_PATH = "app.css"
 
+    COMMANDS = App.COMMANDS | {ThemeProvider}
+
     BINDINGS = [
         Binding("q", "quit", "Quit"),
         Binding("r", "refresh", "Refresh"),
         Binding("left", "nav_left", "Navigate Left"),
         Binding("right", "nav_right", "Navigate Right"),
+        Binding("ctrl+p", "command_palette", "Commands"),
     ]
 
     def __init__(self, theme: Optional[str] = None, **kwargs: Any):
@@ -41,12 +56,14 @@ class NewsApp(App):
             with Vertical(id="left"):
                 yield Static("Sections", classes="pane-title")
                 yield ListView(id="sections-list")
+            yield Rule(direction="vertical")
             with Vertical(id="right"):
                 yield Static("Headlines", classes="pane-title")
                 yield ListView(id="headlines-list")
         yield Footer()
 
     def on_mount(self) -> None:
+        self.screen.bindings = self.BINDINGS
         # Start loading sections on mount
         self.run_worker(get_sections_combined, name="sections_loader", thread=True)
         # focus sections list if possible
@@ -71,6 +88,8 @@ class NewsApp(App):
             self._handle_sections_loaded(event)
         elif name == "headlines_loader" and event.state is WorkerState.SUCCESS:
             self._handle_headlines_loaded(event)
+        elif name == "headlines_loader" and event.state is WorkerState.ERROR:
+            self._handle_headlines_error(event)
         elif name == "headlines_loader" and event.state not in (
             WorkerState.PENDING,
             WorkerState.RUNNING,
@@ -92,12 +111,32 @@ class NewsApp(App):
             # load headlines for the first section
             self._load_headlines_for_section(self.current_section)
 
+    def _handle_headlines_error(self, event: Worker.StateChanged) -> None:
+        view = self.query_one("#headlines-list", ListView)
+        try:
+            view.query_one(LoadingIndicator).remove()
+        except Exception:
+            pass
+        view.append(
+            ListItem(
+                Static(
+                    "[b red]Error loading headlines.[/b red]\n\n"
+                    "Please check your internet connection and try again."
+                )
+            )
+        )
+
     def _handle_headlines_loaded(self, event: Worker.StateChanged) -> None:
         view = self.query_one("#headlines-list", ListView)
-        view.clear()
+        try:
+            view.query_one(LoadingIndicator).remove()
+        except Exception:
+            pass
         stories = getattr(event.worker, "result", None) or []
         if not stories:
-            view.append(ListItem(Static("[i]No headlines available.[/i]")))
+            view.append(
+                ListItem(Static("[i]No headlines available for this section.[/i]"))
+            )
             return
         for s in stories:
             view.append(StoryListItem(s))
@@ -107,7 +146,7 @@ class NewsApp(App):
             return
         headlines_view = self.query_one("#headlines-list", ListView)
         headlines_view.clear()
-        headlines_view.append(ListItem(Static("[i]Loading headlines...[/i]")))
+        headlines_view.mount(LoadingIndicator())
         self.run_worker(
             lambda: get_stories_from_url(section.url),
             name="headlines_loader",
@@ -142,3 +181,6 @@ class NewsApp(App):
                 self.query_one("#headlines-list").focus()
         except Exception:
             pass
+
+    def action_switch_theme(self, theme: str) -> None:
+        self.theme = theme

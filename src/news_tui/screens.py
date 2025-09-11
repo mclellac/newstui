@@ -28,7 +28,7 @@ except Exception:
 # --- Story screen (separate) ---
 class StoryViewScreen(Screen):
     BINDINGS = [
-        Binding("escape,q,b", "app.pop_screen", "Back"),
+        Binding("escape,q,b,left", "app.pop_screen", "Back"),
         Binding("o", "open_in_browser", "Open in browser"),
         Binding("r", "reload_story", "Reload"),
     ]
@@ -40,13 +40,13 @@ class StoryViewScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Header()
         yield Footer()
-        # Title, loading indicator, and scrollable Markdown
-        yield Static(self.story.title, classes="pane-title")
+        # loading indicator and scrollable Markdown
         loading = LoadingIndicator(id="story-loading")
         yield loading
         yield VerticalScroll(Markdown("", id="story-markdown"), id="story-scroll")
 
     def on_mount(self) -> None:
+        self.title = self.story.title
         # hide loading until the worker runs
         try:
             self.query_one("#story-loading", LoadingIndicator).display = False

@@ -8,6 +8,7 @@ class Story:
     title: str
     url: str
     flag: Optional[str] = None
+    summary: Optional[str] = None
 
 
 @dataclass

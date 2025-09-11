@@ -10,4 +10,8 @@ ListView { border: none; }
 ListItem { padding: 0 1; }
 ListItem:hover { background: $primary-lighten-2; }
 ListView > ListItem.--highlighted { background: $accent; color: $text; }
+.summary {
+    color: $text-muted;
+    padding-left: 2;
+}
 #story-scroll { padding: 1 0; }
