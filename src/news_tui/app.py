@@ -32,7 +32,7 @@ class NewsApp(App):
     def __init__(self, theme: Optional[str] = None, **kwargs: Any):
         super().__init__(**kwargs)
         self.current_section: Optional[Section] = None
-        self.theme = theme
+        self._theme_name = theme
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -59,8 +59,8 @@ class NewsApp(App):
             self.register_theme(theme)
 
         # Set the theme if one was provided
-        if self.theme and self.theme in THEMES:
-            pass
+        if self._theme_name and self._theme_name in THEMES:
+            self.theme = self._theme_name
         else:
             self.theme = "dracula"
 
