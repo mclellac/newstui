@@ -29,27 +29,26 @@ def main() -> None:
         debug_path = enable_debug_log_to_tmp()
         print(f"Debug logging enabled: {debug_path}", file=sys.stderr)
 
-    theme_path: Optional[str] = None
+    theme_css_path: Optional[str] = None
     if args.theme:
-        user_theme_path = os.path.join(THEMES_DIR, f"{args.theme}.css")
+        user_theme_path = os.path.join(THEMES_DIR, f"{args.theme}.tcss")
         if os.path.exists(user_theme_path):
-            theme_path = user_theme_path
+            theme_css_path = user_theme_path
         else:
             print(
                 f"Theme {args.theme} not found; continuing without it.",
                 file=sys.stderr,
             )
     else:
-        theme_path = load_theme_file_from_config()
+        theme_css_path = load_theme_file_from_config()
 
-    if theme_path:
-        NewsApp.CSS_PATH = theme_path
-        logger.info("Using theme CSS: %s", theme_path)
+    if theme_css_path:
+        logger.info("Using theme CSS: %s", theme_css_path)
     else:
         logger.info("No theme CSS applied; using built-in CSS.")
 
     try:
-        app = NewsApp()
+        app = NewsApp(css_path=theme_css_path)
         app.run()
     except Exception as e:
         logger.exception("Application crashed: %s", e)

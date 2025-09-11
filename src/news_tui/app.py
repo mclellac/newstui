@@ -25,9 +25,9 @@ class NewsApp(App):
     Header { background: $primary; color: $text; }
     Footer { background: $primary-darken-1; color: $text; }
     #main { layout: horizontal; height: 1fr; padding: 1; }
-    #left { width: 40%; min-width: 30; padding-right: 1; }
-    #right { width: 60%; min-width: 60; padding-left: 1; }
-    .pane-title { text-style: bold; padding-bottom: 1; }
+    #left { width: 40%; min-width: 30; padding-right: 1; border: round $primary; }
+    #right { width: 60%; min-width: 60; padding-left: 1; border: round $primary; }
+    .pane-title { text-style: bold; padding: 0 1; }
     ListView { border: none; }
     ListItem { padding: 0 1; }
     ListItem:hover { background: $primary-lighten-2; }
