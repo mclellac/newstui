@@ -158,8 +158,11 @@ def get_stories_from_url(url: str) -> List[Story]:
             span = a.find("span")
             flag = span.get_text(strip=True) if span else None
             title = a.get_text(" ", strip=True).replace(flag or "", "").strip()
+            summary = None
+            if p := a.find_next_sibling("p"):
+                summary = p.get_text(strip=True)
             if title and href:
-                stories.append(Story(title=title, url=href, flag=flag))
+                stories.append(Story(title=title, url=href, flag=flag, summary=summary))
         return _unique_ordered_stories(stories)
     except Exception as e:
         logger.error("Failed to parse stories from %s: %s", url, e)

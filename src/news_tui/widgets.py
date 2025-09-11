@@ -22,7 +22,9 @@ class StoryListItem(ListItem):
         self.story = story
 
     def compose(self) -> ComposeResult:
-        text = self.story.title
+        title_text = self.story.title
         if self.story.flag:
-            text = f"[b]{self.story.flag}[/] — {text}"
-        yield Static(text)
+            title_text = f"[b]{self.story.flag}[/] — {title_text}"
+        yield Static(title_text)
+        if self.story.summary:
+            yield Static(self.story.summary, classes="summary")
