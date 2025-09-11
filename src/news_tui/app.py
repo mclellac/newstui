@@ -12,6 +12,7 @@ from .config import HOME_PAGE_URL
 from .datamodels import Section
 from .fetcher import get_sections_combined, get_stories_from_url
 from .screens import StoryViewScreen
+from .themes import THEMES
 from .widgets import SectionListItem, StoryListItem
 
 
@@ -19,21 +20,7 @@ class NewsApp(App):
     TITLE = "News "
     SUB_TITLE = "News client for abnormies"
 
-    CSS = """
-    /* default minimal styling (users can override with theme CSS) */
-    Screen { background: $surface; color: $text; }
-    Header { background: $primary; color: $text; }
-    Footer { background: $primary-darken-1; color: $text; }
-    #main { layout: horizontal; height: 1fr; padding: 1; }
-    #left { width: 40%; min-width: 30; padding-right: 1; border: round $primary; }
-    #right { width: 60%; min-width: 60; padding-left: 1; border: round $primary; }
-    .pane-title { text-style: bold; padding: 0 1; }
-    ListView { border: none; }
-    ListItem { padding: 0 1; }
-    ListItem:hover { background: $primary-lighten-2; }
-    ListView > ListItem.--highlighted { background: $accent; color: $text; }
-    #story-scroll { padding: 1 0; }
-    """
+    CSS_PATH = "app.css"
 
     BINDINGS = [
         Binding("q", "quit", "Quit"),
@@ -42,9 +29,10 @@ class NewsApp(App):
         Binding("right", "nav_right", "Navigate Right"),
     ]
 
-    def __init__(self, **kwargs: Any):
+    def __init__(self, theme: Optional[str] = None, **kwargs: Any):
         super().__init__(**kwargs)
         self.current_section: Optional[Section] = None
+        self.theme = theme
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -66,6 +54,15 @@ class NewsApp(App):
             self.query_one("#sections-list").focus()
         except Exception:
             pass
+        # Register all themes
+        for name, theme in THEMES.items():
+            self.register_theme(theme)
+
+        # Set the theme if one was provided
+        if self.theme and self.theme in THEMES:
+            self.theme = self.theme
+        else:
+            self.theme = "dracula"
 
     def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
         name = getattr(event.worker, "name", None)
