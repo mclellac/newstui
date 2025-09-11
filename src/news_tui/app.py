@@ -56,7 +56,7 @@ class NewsApp(App):
             with Vertical(id="left"):
                 yield Static("Sections", classes="pane-title")
                 yield ListView(id="sections-list")
-            yield Rule(direction="vertical")
+            yield Rule(orientation="vertical")
             with Vertical(id="right"):
                 yield Static("Headlines", classes="pane-title")
                 yield ListView(id="headlines-list")
