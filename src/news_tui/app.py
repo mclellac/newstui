@@ -60,7 +60,7 @@ class NewsApp(App):
 
         # Set the theme if one was provided
         if self.theme and self.theme in THEMES:
-            self.theme = self.theme
+            pass
         else:
             self.theme = "dracula"
 
