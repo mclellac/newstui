@@ -64,7 +64,7 @@ def load_theme_file_from_config() -> Optional[str]:
         if not name:
             return None
 
-        user_theme_path = os.path.join(THEMES_DIR, f"{name}.css")
+        user_theme_path = os.path.join(THEMES_DIR, f"{name}.tcss")
         if os.path.exists(user_theme_path):
             logger.info(f"Loading user theme: {name}")
             return user_theme_path
