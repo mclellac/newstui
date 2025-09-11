@@ -8,9 +8,13 @@ from datetime import datetime
 from typing import Optional
 
 # --- Configuration ---
-HOME_PAGE_URL = "https://www.cbc.ca/lite"
-SECTIONS_PAGE_URL = "https://www.cbc.ca/lite/sections"
-DOMAIN_BASE = "https://www.cbc.ca"
+DEFAULT_SOURCE = {
+    "name": "CBC Lite",
+    "base_url": "https://www.cbc.ca",
+    "home_url": "https://www.cbc.ca/lite",
+    "sections_url": "https://www.cbc.ca/lite/sections",
+}
+
 HTTP_TIMEOUT = 15
 MIN_ARTICLE_WORDS = 15
 

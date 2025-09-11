@@ -13,15 +13,13 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 from .config import (
-    DOMAIN_BASE,
-    HOME_PAGE_URL,
+    DEFAULT_SOURCE,
     HTTP_TIMEOUT,
     INITIAL_RETRY_DELAY,
     MIN_ARTICLE_WORDS,
     PLACEHOLDER_PATTERN,
     REQUEST_HEADERS,
     RETRY_ATTEMPTS,
-    SECTIONS_PAGE_URL,
 )
 from .datamodels import Section, Story
 
@@ -71,7 +69,7 @@ def _abs_url(href: str) -> str:
         return ""
     if href.startswith("http://") or href.startswith("https://"):
         return href
-    return urljoin(DOMAIN_BASE, href)
+    return urljoin(DEFAULT_SOURCE["base_url"], href)
 
 
 def _unique_ordered_stories(items: Iterable[Story]) -> List[Story]:
@@ -125,7 +123,7 @@ def _parse_json_node_to_markdown(node: Dict[str, Any]) -> str:
 # --- Scraping/parsing functions ---
 def get_sections_combined() -> List[Section]:
     sections_map: Dict[str, Section] = {}
-    for url in (HOME_PAGE_URL, SECTIONS_PAGE_URL):
+    for url in (DEFAULT_SOURCE["home_url"], DEFAULT_SOURCE["sections_url"]):
         content = _retryable_fetch(url)
         if not content:
             continue
@@ -143,7 +141,7 @@ def get_sections_combined() -> List[Section]:
                         sections_map[title] = Section(title=title, url=href)
         except Exception as e:
             logger.debug("Failed parsing sections from %s: %s", url, e)
-    return [Section("Home", HOME_PAGE_URL)] + list(sections_map.values())
+    return [Section("Home", DEFAULT_SOURCE["home_url"])] + list(sections_map.values())
 
 
 def get_stories_from_url(url: str) -> List[Story]:
@@ -198,11 +196,19 @@ def get_story_content(url: str) -> Dict[str, Any]:
                 logger.debug(
                     "JSON parse failed for %s; falling back to paragraphs", url
                 )
-        main = soup.find("main") or soup
-        paras = [p.get_text(" ", strip=True) for p in main.find_all("p")]
-        candidate = "\n\n".join([p for p in paras if p]).strip()
+        # Fallback: try to get content from <article>, <main>, or body
+        container = soup.find("article") or soup.find("main") or soup
+        title_tag = container.find("h1")
+        title = ""
+        if title_tag:
+            title = f"# {title_tag.get_text(strip=True)}\n\n"
+
+        text = container.get_text(separator="\n\n", strip=True)
+        candidate = title + text
+
         if candidate and not _is_placeholder_text(candidate):
             return {"ok": True, "content": candidate}
+
     except Exception as e:
         logger.error("Failed to parse story content from %s: %s", url, e)
     return {"ok": False, "content": "Could not extract valid article content."}
