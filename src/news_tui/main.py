@@ -31,7 +31,7 @@ def main() -> None:
 
     theme_css_path: Optional[str] = None
     if args.theme:
-        user_theme_path = os.path.join(THEMES_DIR, f"{args.theme}.tcss")
+        user_theme_path = os.path.join(THEMES_DIR, f"{args.theme}.css")
         if os.path.exists(user_theme_path):
             theme_css_path = user_theme_path
         else:
