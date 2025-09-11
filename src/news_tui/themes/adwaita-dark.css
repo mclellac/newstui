@@ -1,0 +1,22 @@
+Screen {
+    background: #242424;
+    color: #eeeeec;
+}
+
+Header {
+    background: #303030;
+    color: #eeeeec;
+}
+
+Footer {
+    background: #1e1e1e;
+}
+
+ListView > ListItem.--highlighted {
+    background: #3584e4;
+    color: #ffffff;
+}
+
+ListItem:hover {
+    background: #4a4a4a;
+}

@@ -1,0 +1,5 @@
+textual
+requests
+beautifulsoup4
+lxml
+urllib3
