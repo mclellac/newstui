@@ -9,7 +9,8 @@ import sys
 from typing import Optional
 
 from .app import NewsApp
-from .config import THEMES_DIR, enable_debug_log_to_tmp, load_theme_file_from_config
+from .config import enable_debug_log_to_tmp, load_theme_name_from_config
+from .themes import THEMES
 
 logger = logging.getLogger("news")
 
@@ -21,7 +22,7 @@ def main() -> None:
     parser.add_argument(
         "--theme",
         type=str,
-        help="Temporarily set theme (CSS file name without .css) for this run",
+        help=f"Set theme for this run. Available: {', '.join(THEMES.keys())}",
     )
     args = parser.parse_args()
 
@@ -29,26 +30,19 @@ def main() -> None:
         debug_path = enable_debug_log_to_tmp()
         print(f"Debug logging enabled: {debug_path}", file=sys.stderr)
 
-    theme_css_path: Optional[str] = None
-    if args.theme:
-        user_theme_path = os.path.join(THEMES_DIR, f"{args.theme}.css")
-        if os.path.exists(user_theme_path):
-            theme_css_path = user_theme_path
-        else:
-            print(
-                f"Theme {args.theme} not found; continuing without it.",
-                file=sys.stderr,
-            )
-    else:
-        theme_css_path = load_theme_file_from_config()
+    theme_name = args.theme or load_theme_name_from_config()
 
-    if theme_css_path:
-        logger.info("Using theme CSS: %s", theme_css_path)
+    if theme_name and theme_name not in THEMES:
+        print(f"Theme '{theme_name}' not found.", file=sys.stderr)
+        theme_name = None
+
+    if theme_name:
+        logger.info("Using theme: %s", theme_name)
     else:
-        logger.info("No theme CSS applied; using built-in CSS.")
+        logger.info("No theme applied; using built-in theme.")
 
     try:
-        app = NewsApp(css_path=theme_css_path)
+        app = NewsApp(theme=theme_name)
         app.run()
     except Exception as e:
         logger.exception("Application crashed: %s", e)

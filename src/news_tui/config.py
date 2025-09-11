@@ -15,7 +15,6 @@ HTTP_TIMEOUT = 15
 MIN_ARTICLE_WORDS = 15
 
 CONFIG_PATH = os.path.expanduser("~/.config/news/config.json")
-THEMES_DIR = os.path.expanduser("~/.config/news/themes/")
 
 REQUEST_HEADERS = {
     "User-Agent": (
@@ -53,22 +52,17 @@ def enable_debug_log_to_tmp() -> str:
     return debug_path
 
 
-def load_theme_file_from_config() -> Optional[str]:
-    """Return path to theme CSS if configured and present; else None."""
+def load_theme_name_from_config() -> Optional[str]:
+    """Return theme name if configured and present; else None."""
     if not os.path.exists(CONFIG_PATH):
         return None
     try:
         with open(CONFIG_PATH, "r") as f:
             cfg = json.load(f)
         name = cfg.get("theme")
-        if not name:
-            return None
-
-        user_theme_path = os.path.join(THEMES_DIR, f"{name}.css")
-        if os.path.exists(user_theme_path):
-            logger.info(f"Loading user theme: {name}")
-            return user_theme_path
-
+        if name:
+            logger.info(f"Loading theme: {name}")
+            return name
     except Exception as e:
         logger.debug("Failed to read theme config: %s", e)
 
