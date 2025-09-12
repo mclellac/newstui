@@ -32,12 +32,13 @@ class StatusBar(Static):
         if self.loading_status:
             status_items.append(self.loading_status)
 
-        bindings = self.app.screen.bindings
-        shown_bindings = [b for b in bindings.values() if b.show]
-        bindings_text = " | ".join(
-            f"[b cyan]{b.key}[/] {b.description}" for b in shown_bindings
-        )
-        status_items.append(bindings_text)
+        if hasattr(self.app, "screen") and hasattr(self.app.screen, "bindings"):
+            bindings = self.app.screen.bindings
+            shown_bindings = [b for b in bindings.values() if b.show]
+            bindings_text = " | ".join(
+                f"[b cyan]{b.key}[/] {b.description}" for b in shown_bindings
+            )
+            status_items.append(bindings_text)
 
         self.update(" | ".join(status_items))
 
