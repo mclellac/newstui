@@ -15,6 +15,8 @@ HTTP_TIMEOUT = 15
 MIN_ARTICLE_WORDS = 15
 
 CONFIG_PATH = os.path.expanduser("~/.config/news/config.json")
+READ_ARTICLES_FILE = os.path.expanduser("~/.config/news/read_articles.json")
+BOOKMARKS_FILE = os.path.expanduser("~/.config/news/bookmarks.json")
 
 REQUEST_HEADERS = {
     "User-Agent": (
@@ -50,6 +52,46 @@ def enable_debug_log_to_tmp() -> str:
     logging.getLogger().setLevel(logging.DEBUG)
     logger.debug("Debug logging enabled to %s", debug_path)
     return debug_path
+
+
+def load_read_articles() -> set[str]:
+    """Load the set of read article URLs from the config file."""
+    if not os.path.exists(READ_ARTICLES_FILE):
+        return set()
+    try:
+        with open(READ_ARTICLES_FILE, "r") as f:
+            return set(json.load(f))
+    except (IOError, json.JSONDecodeError):
+        return set()
+
+
+def save_read_articles(read_articles: set[str]) -> None:
+    """Save the set of read article URLs to the config file."""
+    try:
+        with open(READ_ARTICLES_FILE, "w") as f:
+            json.dump(list(read_articles), f)
+    except IOError:
+        pass
+
+
+def load_bookmarks() -> list[dict]:
+    """Load the list of bookmarked articles from the config file."""
+    if not os.path.exists(BOOKMARKS_FILE):
+        return []
+    try:
+        with open(BOOKMARKS_FILE, "r") as f:
+            return json.load(f)
+    except (IOError, json.JSONDecodeError):
+        return []
+
+
+def save_bookmarks(bookmarks: list[dict]) -> None:
+    """Save the list of bookmarked articles to the config file."""
+    try:
+        with open(BOOKMARKS_FILE, "w") as f:
+            json.dump(bookmarks, f)
+    except IOError:
+        pass
 
 
 def load_theme_name_from_config() -> Optional[str]:

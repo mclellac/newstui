@@ -1,20 +1,36 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Optional, List
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.command import CommandPalette, Hit, Hits, Provider
 from textual.containers import Horizontal, Vertical
 from textual.worker import Worker, WorkerState
-from textual.widgets import Footer, Header, ListItem, ListView, Static, LoadingIndicator, Rule
+from textual.widgets import (
+    DataTable,
+    Header,
+    Input,
+    ListView,
+    Static,
+    LoadingIndicator,
+    Rule,
+)
+from textual.widgets.data_table import RowSelected
 
-from .config import HOME_PAGE_URL
-from .datamodels import Section
+from .config import (
+    HOME_PAGE_URL,
+    load_read_articles,
+    save_read_articles,
+    load_bookmarks,
+    save_bookmarks,
+)
+from dataclasses import asdict
+from .datamodels import Section, Story
 from .fetcher import get_sections_combined, get_stories_from_url
-from .screens import StoryViewScreen
+from .screens import StoryViewScreen, BookmarksScreen
 from .themes import THEMES
-from .widgets import SectionListItem, StoryListItem
+from .widgets import SectionListItem, StatusBar
 
 
 class ThemeProvider(Provider):
@@ -43,6 +59,8 @@ class NewsApp(App):
     BINDINGS = [
         Binding("q", "quit", "Quit"),
         Binding("r", "refresh", "Refresh"),
+        Binding("b", "bookmark", "Bookmark"),
+        Binding("B", "show_bookmarks", "Show Bookmarks"),
         Binding("left", "nav_left", "Navigate Left"),
         Binding("right", "nav_right", "Navigate Right"),
         Binding("ctrl+p", "command_palette", "Commands"),
@@ -52,6 +70,9 @@ class NewsApp(App):
         super().__init__(**kwargs)
         self.current_section: Optional[Section] = None
         self._theme_name = theme
+        self.stories: List[Story] = []
+        self.read_articles: set[str] = set()
+        self.bookmarks: List[dict] = []
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -63,10 +84,13 @@ class NewsApp(App):
             yield Rule(orientation="vertical")
             with Vertical(id="right"):
                 yield Static("Headlines", classes="pane-title")
-                yield ListView(id="headlines-list")
-        yield Footer()
+                yield Input(placeholder="Filter headlines...")
+                yield DataTable(id="headlines-table")
+        yield StatusBar()
 
     def on_mount(self) -> None:
+        self.read_articles = load_read_articles()
+        self.bookmarks = load_bookmarks()
         self.screen.bindings = self.BINDINGS
         # Start loading sections on mount
         self.run_worker(get_sections_combined, name="sections_loader", thread=True)
@@ -75,6 +99,15 @@ class NewsApp(App):
             self.query_one("#sections-list").focus()
         except Exception:
             pass
+
+        # Configure the headlines table
+        table = self.query_one(DataTable)
+        table.cursor_type = "row"
+        table.add_column("Flag", width=5)
+        table.add_column("Title", width=50)
+        table.add_column("Summary")
+        table.add_column("story", width=0)
+
         # Register all themes
         for name, theme in THEMES.items():
             self.register_theme(theme)
@@ -84,6 +117,7 @@ class NewsApp(App):
             self.theme = self._theme_name
         else:
             self.theme = "dracula"
+        self.query_one(StatusBar).theme_name = self.theme
 
     def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
         name = getattr(event.worker, "name", None)
@@ -116,41 +150,48 @@ class NewsApp(App):
             self._load_headlines_for_section(self.current_section)
 
     def _handle_headlines_error(self, event: Worker.StateChanged) -> None:
-        view = self.query_one("#headlines-list", ListView)
+        self.query_one(StatusBar).loading_status = "Error loading headlines."
+        table = self.query_one(DataTable)
         try:
-            view.query_one(LoadingIndicator).remove()
+            table.query_one(LoadingIndicator).remove()
         except Exception:
             pass
-        view.append(
-            ListItem(
-                Static(
-                    "[b red]Error loading headlines.[/b red]\n\n"
-                    "Please check your internet connection and try again."
-                )
-            )
-        )
+        table.visible = False
 
-    def _handle_headlines_loaded(self, event: Worker.StateChanged) -> None:
-        view = self.query_one("#headlines-list", ListView)
-        try:
-            view.query_one(LoadingIndicator).remove()
-        except Exception:
-            pass
-        stories = getattr(event.worker, "result", None) or []
+    def _update_headlines_table(self, stories: List[Story]) -> None:
+        table = self.query_one(DataTable)
+        table.clear()
         if not stories:
-            view.append(
-                ListItem(Static("[i]No headlines available for this section.[/i]"))
-            )
+            table.visible = False
             return
         for s in stories:
-            view.append(StoryListItem(s))
+            classes = "read" if s.read else ""
+            flag = s.flag or ""
+            if s.bookmarked:
+                flag = f"B {flag}".strip()
+            table.add_row(
+                flag, s.title, s.summary or "", s, key=s.url, classes=classes
+            )
+        table.visible = True
+
+    def _handle_headlines_loaded(self, event: Worker.StateChanged) -> None:
+        self.query_one(StatusBar).loading_status = ""
+        table = self.query_one(DataTable)
+        try:
+            table.query_one(LoadingIndicator).remove()
+        except Exception:
+            pass
+        self.stories = getattr(event.worker, "result", None) or []
+        self._update_headlines_table(self.stories)
 
     def _load_headlines_for_section(self, section: Section) -> None:
         if not section:
             return
-        headlines_view = self.query_one("#headlines-list", ListView)
-        headlines_view.clear()
-        headlines_view.mount(LoadingIndicator())
+        self.query_one(StatusBar).loading_status = f"Loading {section.title}..."
+        self.query_one(Input).value = ""
+        table = self.query_one(DataTable)
+        table.clear()
+        table.mount(LoadingIndicator())
         self.run_worker(
             lambda: get_stories_from_url(section.url),
             name="headlines_loader",
@@ -158,15 +199,21 @@ class NewsApp(App):
         )
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
-        # Section selected -> load headlines. Headline selected -> open StoryViewScreen.
+        # Section selected -> load headlines.
         if event.list_view.id == "sections-list":
             if isinstance(event.item, SectionListItem):
                 self.current_section = event.item.section
                 self._load_headlines_for_section(self.current_section)
-        elif event.list_view.id == "headlines-list":
-            if isinstance(event.item, StoryListItem):
-                # push the story screen (separate view)
-                self.push_screen(StoryViewScreen(event.item.story))
+
+    def on_data_table_row_selected(self, event: RowSelected) -> None:
+        # Headline selected -> open StoryViewScreen.
+        story = event.control.get_row(event.row_key)[-1]
+        if story:
+            story.read = True
+            self.read_articles.add(story.url)
+            save_read_articles(self.read_articles)
+            self._update_headlines_table(self.stories)
+            self.push_screen(StoryViewScreen(story))
 
     def action_refresh(self) -> None:
         if self.current_section:
@@ -174,7 +221,7 @@ class NewsApp(App):
 
     def action_nav_left(self) -> None:
         try:
-            if self.query_one("#headlines-list").has_focus:
+            if self.query_one("#headlines-table").has_focus:
                 self.query_one("#sections-list").focus()
         except Exception:
             pass
@@ -182,9 +229,42 @@ class NewsApp(App):
     def action_nav_right(self) -> None:
         try:
             if self.query_one("#sections-list").has_focus:
-                self.query_one("#headlines-list").focus()
+                self.query_one("#headlines-table").focus()
         except Exception:
             pass
 
+    def on_input_changed(self, event: Input.Changed) -> None:
+        query = event.value.strip().lower()
+        if not query:
+            self._update_headlines_table(self.stories)
+            return
+        filtered_stories = [
+            s
+            for s in self.stories
+            if query in s.title.lower() or (s.summary and query in s.summary.lower())
+        ]
+        self._update_headlines_table(filtered_stories)
+
+    def action_bookmark(self) -> None:
+        table = self.query_one(DataTable)
+        if not table.has_focus:
+            return
+        row_index = table.cursor_row
+        story = table.get_row_at(row_index)[-1]
+        if not story:
+            return
+
+        story.bookmarked = not story.bookmarked
+        if story.bookmarked:
+            self.bookmarks.append(asdict(story))
+        else:
+            self.bookmarks = [b for b in self.bookmarks if b["url"] != story.url]
+        save_bookmarks(self.bookmarks)
+        self._update_headlines_table(self.stories)
+
+    def action_show_bookmarks(self) -> None:
+        self.push_screen(BookmarksScreen())
+
     def action_switch_theme(self, theme: str) -> None:
         self.theme = theme
+        self.query_one(StatusBar).theme_name = theme

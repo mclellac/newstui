@@ -9,6 +9,8 @@ class Story:
     url: str
     flag: Optional[str] = None
     summary: Optional[str] = None
+    read: bool = False
+    bookmarked: bool = False
 
 
 @dataclass

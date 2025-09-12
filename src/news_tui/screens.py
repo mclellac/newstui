@@ -11,6 +11,8 @@ from textual.widgets import Footer, Header, LoadingIndicator, Static
 
 from .datamodels import Story
 from .fetcher import get_story_content
+from .config import load_bookmarks
+from textual.widgets import DataTable
 
 # Markdown & scroll fallbacks for different Textual versions
 try:
@@ -106,3 +108,23 @@ class StoryViewScreen(Screen):
 
     def action_reload_story(self) -> None:
         self.load_story()
+
+
+class BookmarksScreen(Screen):
+    BINDINGS = [
+        Binding("escape,q,b,left", "app.pop_screen", "Back"),
+    ]
+
+    def compose(self) -> ComposeResult:
+        yield Header()
+        yield Footer()
+        yield DataTable()
+
+    def on_mount(self) -> None:
+        self.title = "Bookmarks"
+        table = self.query_one(DataTable)
+        table.add_column("Title", width=50)
+        table.add_column("Summary")
+        bookmarks = load_bookmarks()
+        for b in bookmarks:
+            table.add_row(b["title"], b["summary"] or "")
