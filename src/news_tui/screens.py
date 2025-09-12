@@ -12,6 +12,7 @@ from textual.widgets import Footer, Header, LoadingIndicator, Static
 from .datamodels import Story
 from .fetcher import get_story_content
 from .config import load_bookmarks
+from .themes import THEMES
 from textual.widgets import DataTable
 
 # Markdown & scroll fallbacks for different Textual versions
@@ -71,6 +72,10 @@ class StoryViewScreen(Screen):
         if getattr(event.worker, "name", None) != "story_loader":
             return
 
+        error_color = "red"
+        if self.app.theme in THEMES:
+            error_color = THEMES[self.app.theme].error
+
         # Only act when worker finished (SUCCESS) or otherwise finished (non-running).
         if event.state is WorkerState.SUCCESS:
             result = getattr(event.worker, "result", None) or {
@@ -91,7 +96,7 @@ class StoryViewScreen(Screen):
                     if isinstance(result, dict)
                     else "Unable to load article."
                 )
-                md.update(f"[b red]{msg}[/]")
+                md.update(f"[b {error_color}]{msg}[/]")
         else:
             # worker not SUCCESS; if it's not running/pending treat as failure
             if event.state not in (WorkerState.PENDING, WorkerState.RUNNING):
@@ -99,7 +104,7 @@ class StoryViewScreen(Screen):
                     self.query_one("#story-loading", LoadingIndicator).display = False
                     self.query_one("#story-scroll").display = True
                     md = self.query_one("#story-markdown")
-                    md.update("[b red]Unable to load article[/]")
+                    md.update(f"[b {error_color}]Unable to load article[/]")
                 except Exception:
                     pass
 
