@@ -27,8 +27,9 @@ from .config import (
 )
 from dataclasses import asdict
 from .datamodels import Section, Story
-from .fetcher import get_sections_combined, get_stories_from_url
-from .screens import StoryViewScreen, BookmarksScreen
+from .fetcher import Fetcher
+from .sources.base import BaseSource
+from .screens import StoryViewScreen, BookmarksScreen, HelpScreen
 from .themes import THEMES
 from .widgets import SectionListItem, StatusBar
 
@@ -61,18 +62,25 @@ class NewsApp(App):
         Binding("r", "refresh", "Refresh"),
         Binding("b", "bookmark", "Bookmark"),
         Binding("B", "show_bookmarks", "Show Bookmarks"),
+        Binding("h", "show_help", "Help"),
         Binding("left", "nav_left", "Navigate Left"),
         Binding("right", "nav_right", "Navigate Right"),
         Binding("ctrl+p", "command_palette", "Commands"),
     ]
 
-    def __init__(self, theme: Optional[str] = None, **kwargs: Any):
+    def __init__(
+        self,
+        theme: Optional[str] = None,
+        source: Optional[BaseSource] = None,
+        **kwargs: Any,
+    ):
         super().__init__(**kwargs)
         self.current_section: Optional[Section] = None
         self._theme_name = theme
         self.stories: List[Story] = []
         self.read_articles: set[str] = set()
         self.bookmarks: List[dict] = []
+        self.fetcher = Fetcher(source)
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -86,6 +94,9 @@ class NewsApp(App):
                 yield Static("Headlines", classes="pane-title")
                 yield Input(placeholder="Filter headlines...")
                 yield DataTable(id="headlines-table")
+                yield Rule()
+                yield Static("Summary", classes="pane-title")
+                yield Static(id="summary-text", classes="summary-text")
         yield StatusBar()
 
     def on_mount(self) -> None:
@@ -93,7 +104,7 @@ class NewsApp(App):
         self.bookmarks = load_bookmarks()
         self.screen.bindings = self.BINDINGS
         # Start loading sections on mount
-        self.run_worker(get_sections_combined, name="sections_loader", thread=True)
+        self.run_worker(self.fetcher.get_sections, name="sections_loader", thread=True)
         # focus sections list if possible
         try:
             self.query_one("#sections-list").focus()
@@ -192,7 +203,9 @@ class NewsApp(App):
         table.clear()
         table.mount(LoadingIndicator())
         self.run_worker(
-            lambda: get_stories_from_url(section.url),
+            lambda: self.fetcher.get_stories(
+                section, self.read_articles, self.bookmarks
+            ),
             name="headlines_loader",
             thread=True,
         )
@@ -209,7 +222,15 @@ class NewsApp(App):
         self.read_articles.add(story.url)
         save_read_articles(self.read_articles)
         self._update_headlines_table(self.stories)
-        self.push_screen(StoryViewScreen(story))
+        self.push_screen(StoryViewScreen(story, self.fetcher, self.current_section))
+
+    def on_data_table_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
+        summary_text = self.query_one("#summary-text", Static)
+        story = event.control.get_row(event.row_key)[-1]
+        if story and story.summary:
+            summary_text.update(story.summary)
+        else:
+            summary_text.update("No summary available.")
 
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
         # Headline selected -> open StoryViewScreen.
@@ -271,6 +292,9 @@ class NewsApp(App):
 
     def action_show_bookmarks(self) -> None:
         self.push_screen(BookmarksScreen())
+
+    def action_show_help(self) -> None:
+        self.push_screen(HelpScreen())
 
     def action_switch_theme(self, theme: str) -> None:
         self.theme = theme

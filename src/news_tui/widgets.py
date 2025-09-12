@@ -38,18 +38,6 @@ class StatusBar(Static):
         if self.loading_status:
             status_items.append(self.loading_status)
 
-        if hasattr(self.app, "screen") and hasattr(self.app.screen, "bindings"):
-            bindings = self.app.screen.bindings
-            shown_bindings = [b for b in bindings if b.show]
-
-            key_color = "cyan"
-            if self.app.theme in THEMES:
-                key_color = THEMES[self.app.theme].accent
-
-            bindings_text = " | ".join(
-                f"[b {key_color}]{b.key}[/] {b.description}" for b in shown_bindings
-            )
-            status_items.append(bindings_text)
 
         self.update(" | ".join(status_items))
 

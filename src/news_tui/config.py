@@ -94,18 +94,18 @@ def save_bookmarks(bookmarks: list[dict]) -> None:
         pass
 
 
-def load_theme_name_from_config() -> Optional[str]:
-    """Return theme name if configured and present; else None."""
+def load_config() -> Dict[str, Any]:
+    """Load the main configuration file."""
     if not os.path.exists(CONFIG_PATH):
-        return None
+        return {}
     try:
         with open(CONFIG_PATH, "r") as f:
-            cfg = json.load(f)
-        name = cfg.get("theme")
-        if name:
-            logger.info(f"Loading theme: {name}")
-            return name
-    except Exception as e:
-        logger.debug("Failed to read theme config: %s", e)
+            return json.load(f)
+    except (IOError, json.JSONDecodeError):
+        return {}
 
-    return None
+
+def load_theme_name_from_config() -> Optional[str]:
+    """Return theme name if configured and present; else None."""
+    config = load_config()
+    return config.get("theme")
