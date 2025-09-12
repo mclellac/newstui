@@ -10,7 +10,7 @@ Header {
 }
 
 Footer {
-    background: #286983;
+    background: #1f1d2e;
 }
 
 ListView > ListItem.--highlighted {
@@ -19,5 +19,5 @@ ListView > ListItem.--highlighted {
 }
 
 ListItem:hover {
-    background: #3e6d8f;
+    background: #26233a;
 }
