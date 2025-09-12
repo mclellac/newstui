@@ -42,7 +42,7 @@ def main() -> None:
 
     try:
         source = get_source(config)
-        app = NewsApp(theme=theme_name, source=source)
+        app = NewsApp(theme=theme_name, source=source, config=config)
         app.run()
     except Exception as e:
         logger.exception("Application crashed: %s", e)

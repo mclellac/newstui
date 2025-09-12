@@ -97,11 +97,15 @@ def save_bookmarks(bookmarks: list[dict]) -> None:
 def load_config() -> Dict[str, Any]:
     """Load the main configuration file."""
     if not os.path.exists(CONFIG_PATH):
+        logger.info("Config file not found at %s", CONFIG_PATH)
         return {}
     try:
         with open(CONFIG_PATH, "r") as f:
-            return json.load(f)
-    except (IOError, json.JSONDecodeError):
+            config = json.load(f)
+            logger.info("Loaded config from %s", CONFIG_PATH)
+            return config
+    except (IOError, json.JSONDecodeError) as e:
+        logger.error("Failed to load config from %s: %s", CONFIG_PATH, e)
         return {}
 
 
