@@ -104,8 +104,7 @@ class NewsApp(App):
         table = self.query_one(DataTable)
         table.cursor_type = "row"
         table.add_column("Flag", width=5)
-        table.add_column("Title", width=50)
-        table.add_column("Summary")
+        table.add_column("Title")
         table.add_column("story", width=0)
 
         # Register all themes
@@ -173,7 +172,6 @@ class NewsApp(App):
             table.add_row(
                 Text(flag, style=style),
                 Text(s.title, style=style),
-                Text(s.summary or "", style=style),
                 s,
                 key=s.url,
             )
@@ -210,15 +208,18 @@ class NewsApp(App):
                 self.current_section = event.item.section
                 self._load_headlines_for_section(self.current_section)
 
+    def _open_story(self, story: Story) -> None:
+        story.read = True
+        self.read_articles.add(story.url)
+        save_read_articles(self.read_articles)
+        self._update_headlines_table(self.stories)
+        self.push_screen(StoryViewScreen(story))
+
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
         # Headline selected -> open StoryViewScreen.
         story = event.control.get_row(event.row_key)[-1]
         if story:
-            story.read = True
-            self.read_articles.add(story.url)
-            save_read_articles(self.read_articles)
-            self._update_headlines_table(self.stories)
-            self.push_screen(StoryViewScreen(story))
+            self._open_story(story)
 
     def action_refresh(self) -> None:
         if self.current_section:
@@ -232,11 +233,18 @@ class NewsApp(App):
             pass
 
     def action_nav_right(self) -> None:
-        try:
-            if self.query_one("#sections-list").has_focus:
-                self.query_one("#headlines-table").focus()
-        except Exception:
-            pass
+        table = self.query_one("#headlines-table")
+        if table.has_focus:
+            row_index = table.cursor_row
+            story = table.get_row_at(row_index)[-1]
+            if story:
+                self._open_story(story)
+        else:
+            try:
+                if self.query_one("#sections-list").has_focus:
+                    table.focus()
+            except Exception:
+                pass
 
     def on_input_changed(self, event: Input.Changed) -> None:
         query = event.value.strip().lower()
@@ -244,9 +252,7 @@ class NewsApp(App):
             self._update_headlines_table(self.stories)
             return
         filtered_stories = [
-            s
-            for s in self.stories
-            if query in s.title.lower() or (s.summary and query in s.summary.lower())
+            s for s in self.stories if query in s.title.lower()
         ]
         self._update_headlines_table(filtered_stories)
 
