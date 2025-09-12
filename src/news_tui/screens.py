@@ -9,8 +9,8 @@ from textual.screen import Screen
 from textual.worker import Worker, WorkerState
 from textual.widgets import Footer, Header, LoadingIndicator, Static
 
-from .datamodels import Story
-from .fetcher import Fetcher
+from .datamodels import Section, Story
+from .sources.cbc import CBCSource
 from .config import load_bookmarks
 from .themes import THEMES
 from textual.widgets import DataTable
@@ -36,10 +36,10 @@ class StoryViewScreen(Screen):
         Binding("r", "reload_story", "Reload"),
     ]
 
-    def __init__(self, story: Story, fetcher: Fetcher, section: Section):
+    def __init__(self, story: Story, source: CBCSource, section: Section):
         super().__init__()
         self.story = story
-        self.fetcher = fetcher
+        self.source = source
         self.section = section
 
     def compose(self) -> ComposeResult:
@@ -67,7 +67,7 @@ class StoryViewScreen(Screen):
             pass
         # fetch in worker thread
         self.run_worker(
-            lambda: self.fetcher.get_story_content(self.story, self.section),
+            lambda: self.source.get_story_content(self.story, self.section),
             name="story_loader",
             thread=True,
         )

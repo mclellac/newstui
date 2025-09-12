@@ -14,7 +14,6 @@ dependencies = [
     "beautifulsoup4",
     "lxml",
     "urllib3",
-    "feedparser",
 ]
 
 [project.scripts]
