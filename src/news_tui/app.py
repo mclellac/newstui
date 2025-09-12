@@ -6,11 +6,10 @@ from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.command import CommandPalette, Hit, Hits, Provider
 from textual.containers import Horizontal, Vertical
-from textual.css.query import NoMatches
 from textual.worker import Worker, WorkerState
 from textual.widgets import Footer, Header, ListItem, ListView, Static, LoadingIndicator, Rule
 
-from .config import DEFAULT_SOURCE
+from .config import HOME_PAGE_URL
 from .datamodels import Section
 from .fetcher import get_sections_combined, get_stories_from_url
 from .screens import StoryViewScreen
@@ -65,13 +64,12 @@ class NewsApp(App):
 
     def on_mount(self) -> None:
         self.screen.bindings = self.BINDINGS
-        # Start loading sections and show loading indicator in headlines
-        self.query_one("#headlines-list", ListView).mount(LoadingIndicator())
+        # Start loading sections on mount
         self.run_worker(get_sections_combined, name="sections_loader", thread=True)
         # focus sections list if possible
         try:
             self.query_one("#sections-list").focus()
-        except NoMatches:
+        except Exception:
             pass
         # Register all themes
         for name, theme in THEMES.items():
@@ -85,31 +83,26 @@ class NewsApp(App):
 
     def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
         name = getattr(event.worker, "name", None)
-
+        # handle only finished SUCCESS states for sections/headlines
         if name == "sections_loader" and event.state is WorkerState.SUCCESS:
             self._handle_sections_loaded(event)
-            return
-
-        if name == "headlines_loader":
-            # remove loading indicator when worker is finished
-            try:
-                self.query_one(LoadingIndicator).remove()
-            except NoMatches:
-                pass
-
-            if event.state is WorkerState.SUCCESS:
-                self._handle_headlines_loaded(event)
-            elif event.state is WorkerState.ERROR:
-                self._handle_headlines_error(event)
-            else:
-                # worker finished but not successful => show empty/failure message
-                self._handle_headlines_loaded(event)
+        elif name == "headlines_loader" and event.state is WorkerState.SUCCESS:
+            self._handle_headlines_loaded(event)
+        elif name == "headlines_loader" and event.state is WorkerState.ERROR:
+            self._handle_headlines_error(event)
+        elif name == "headlines_loader" and event.state not in (
+            WorkerState.PENDING,
+            WorkerState.RUNNING,
+            WorkerState.SUCCESS,
+        ):
+            # headlines worker finished but not successful => show empty/failure message
+            self._handle_headlines_loaded(event)
 
     def _handle_sections_loaded(self, event: Worker.StateChanged) -> None:
         view = self.query_one("#sections-list", ListView)
         view.clear()
         sections = getattr(event.worker, "result", None) or [
-            Section("Home", DEFAULT_SOURCE["home_url"])
+            Section("Home", HOME_PAGE_URL)
         ]
         for sec in sections:
             view.append(SectionListItem(sec))
@@ -120,6 +113,10 @@ class NewsApp(App):
 
     def _handle_headlines_error(self, event: Worker.StateChanged) -> None:
         view = self.query_one("#headlines-list", ListView)
+        try:
+            view.query_one(LoadingIndicator).remove()
+        except Exception:
+            pass
         view.append(
             ListItem(
                 Static(
@@ -131,6 +128,10 @@ class NewsApp(App):
 
     def _handle_headlines_loaded(self, event: Worker.StateChanged) -> None:
         view = self.query_one("#headlines-list", ListView)
+        try:
+            view.query_one(LoadingIndicator).remove()
+        except Exception:
+            pass
         stories = getattr(event.worker, "result", None) or []
         if not stories:
             view.append(
@@ -171,14 +172,14 @@ class NewsApp(App):
         try:
             if self.query_one("#headlines-list").has_focus:
                 self.query_one("#sections-list").focus()
-        except NoMatches:
+        except Exception:
             pass
 
     def action_nav_right(self) -> None:
         try:
             if self.query_one("#sections-list").has_focus:
                 self.query_one("#headlines-list").focus()
-        except NoMatches:
+        except Exception:
             pass
 
     def action_switch_theme(self, theme: str) -> None:
