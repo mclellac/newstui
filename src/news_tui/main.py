@@ -30,16 +30,13 @@ def main() -> None:
         debug_path = enable_debug_log_to_tmp()
         print(f"Debug logging enabled: {debug_path}", file=sys.stderr)
 
-    theme_name = args.theme or load_theme_name_from_config()
+    theme_name = args.theme or load_theme_name_from_config() or "dracula"
 
-    if theme_name and theme_name not in THEMES:
-        print(f"Theme '{theme_name}' not found.", file=sys.stderr)
-        theme_name = None
+    if theme_name not in THEMES:
+        print(f"Theme '{theme_name}' not found, falling back to dracula.", file=sys.stderr)
+        theme_name = "dracula"
 
-    if theme_name:
-        logger.info("Using theme: %s", theme_name)
-    else:
-        logger.info("No theme applied; using built-in theme.")
+    logger.info("Using theme: %s", theme_name)
 
     try:
         app = NewsApp(theme=theme_name)

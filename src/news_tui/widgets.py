@@ -26,6 +26,11 @@ class StatusBar(Static):
 
     def on_mount(self) -> None:
         self.set_interval(1, self.update_time)
+        self.theme_name = self.app.theme or "default"
+        self.watch(self.app, "theme", self._on_app_theme_changed)
+
+    def _on_app_theme_changed(self, theme: str) -> None:
+        self.theme_name = theme
 
     def update_time(self) -> None:
         time_str = datetime.now().strftime("%H:%M:%S")
