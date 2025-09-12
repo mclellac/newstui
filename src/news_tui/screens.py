@@ -111,6 +111,10 @@ class StoryViewScreen(Screen):
     def action_open_in_browser(self) -> None:
         webbrowser.open(self.story.url)
 
+    def on_markdown_link_clicked(self, event: Markdown.LinkClicked) -> None:
+        """Handle clicks on links in Markdown."""
+        webbrowser.open(event.href)
+
     def action_reload_story(self) -> None:
         self.load_story()
 

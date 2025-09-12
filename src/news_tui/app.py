@@ -103,7 +103,7 @@ class NewsApp(App):
         # Configure the headlines table
         table = self.query_one(DataTable)
         table.cursor_type = "row"
-        table.add_column("Flag", width=5)
+        table.add_column("Flag", width=10)
         table.add_column("Title")
         table.add_column("story", width=0)
 
@@ -111,12 +111,8 @@ class NewsApp(App):
         for name, theme in THEMES.items():
             self.register_theme(theme)
 
-        # Set the theme if one was provided
-        if self._theme_name and self._theme_name in THEMES:
-            self.theme = self._theme_name
-        else:
-            self.theme = "dracula"
-        self.query_one(StatusBar).theme_name = self.theme
+        # Set the theme
+        self.theme = self._theme_name
 
     def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
         name = getattr(event.worker, "name", None)
@@ -278,4 +274,3 @@ class NewsApp(App):
 
     def action_switch_theme(self, theme: str) -> None:
         self.theme = theme
-        self.query_one(StatusBar).theme_name = theme
