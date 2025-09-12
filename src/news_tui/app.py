@@ -72,6 +72,7 @@ class NewsApp(App):
         self,
         theme: Optional[str] = None,
         source: Optional[BaseSource] = None,
+        config: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -81,6 +82,7 @@ class NewsApp(App):
         self.read_articles: set[str] = set()
         self.bookmarks: List[dict] = []
         self.fetcher = Fetcher(source)
+        self.meta_sections = config.get("meta_sections", {}) if config else {}
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -148,10 +150,16 @@ class NewsApp(App):
         sections = getattr(event.worker, "result", None) or [
             Section("Home", HOME_PAGE_URL)
         ]
-        for sec in sections:
+        all_sections = sections.copy()
+        for meta_section_name in self.meta_sections:
+            all_sections.insert(
+                0, Section(title=meta_section_name, url="meta:" + meta_section_name)
+            )
+
+        for sec in all_sections:
             view.append(SectionListItem(sec))
-        if sections:
-            self.current_section = sections[0]
+        if all_sections:
+            self.current_section = all_sections[0]
             # load headlines for the first section
             self._load_headlines_for_section(self.current_section)
 
@@ -197,6 +205,11 @@ class NewsApp(App):
     def _load_headlines_for_section(self, section: Section) -> None:
         if not section:
             return
+
+        if section.url.startswith("meta:"):
+            self._load_headlines_for_meta_section(section)
+            return
+
         self.query_one(StatusBar).loading_status = f"Loading {section.title}..."
         self.query_one(Input).value = ""
         table = self.query_one(DataTable)
@@ -206,6 +219,36 @@ class NewsApp(App):
             lambda: self.fetcher.get_stories(
                 section, self.read_articles, self.bookmarks
             ),
+            name="headlines_loader",
+            thread=True,
+        )
+
+    def _load_headlines_for_meta_section(self, section: Section) -> None:
+        meta_section_name = section.url.replace("meta:", "")
+        section_names = self.meta_sections.get(meta_section_name, [])
+        if not section_names:
+            return
+
+        self.query_one(StatusBar).loading_status = f"Loading {section.title}..."
+        self.query_one(Input).value = ""
+        table = self.query_one(DataTable)
+        table.clear()
+        table.mount(LoadingIndicator())
+
+        def _get_stories():
+            all_stories = []
+            sections = self.query_one("#sections-list").children
+            for section_name in section_names:
+                for s in sections:
+                    if s.section.title == section_name:
+                        stories = self.fetcher.get_stories(
+                            s.section, self.read_articles, self.bookmarks
+                        )
+                        all_stories.extend(stories)
+            return all_stories
+
+        self.run_worker(
+            _get_stories,
             name="headlines_loader",
             thread=True,
         )

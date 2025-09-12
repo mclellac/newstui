@@ -68,6 +68,7 @@ class CBCSource(BaseSource):
         return None
 
     def get_sections(self) -> List[Section]:
+        allowed_sections = self.config.get("sections")
         sections_map: Dict[str, Section] = {}
         for url in (HOME_PAGE_URL, SECTIONS_PAGE_URL):
             content = self._retryable_fetch(url)
@@ -84,7 +85,8 @@ class CBCSource(BaseSource):
                             and title.lower() not in {"menu", "search"}
                             and title not in sections_map
                         ):
-                            sections_map[title] = Section(title=title, url=href)
+                            if not allowed_sections or title in allowed_sections:
+                                sections_map[title] = Section(title=title, url=href)
             except Exception as e:
                 logger.debug("Failed parsing sections from %s: %s", url, e)
         return [Section("Home", HOME_PAGE_URL)] + list(sections_map.values())
