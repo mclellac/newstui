@@ -34,7 +34,7 @@ class StatusBar(Static):
 
         if hasattr(self.app, "screen") and hasattr(self.app.screen, "bindings"):
             bindings = self.app.screen.bindings
-            shown_bindings = [b for b in bindings.values() if b.show]
+            shown_bindings = [b for b in bindings if b.show]
             bindings_text = " | ".join(
                 f"[b cyan]{b.key}[/] {b.description}" for b in shown_bindings
             )
