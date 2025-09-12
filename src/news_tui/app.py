@@ -18,13 +18,17 @@ from .widgets import SectionListItem, StoryListItem
 
 
 class ThemeProvider(Provider):
-    async def get_hits(self, query: str) -> Hits:
+    async def search(self, query: str) -> Hits:
+        """Search for a theme."""
+        matcher = self.matcher(query)
+
         for theme_name in THEMES:
-            if query in theme_name:
+            score = matcher.match(theme_name)
+            if score > 0:
                 yield Hit(
-                    1,
+                    score,
+                    matcher.highlight(f"Switch to {theme_name} theme"),
                     self.app.action_switch_theme(theme_name),
-                    f"Switch to {theme_name} theme",
                 )
 
 

@@ -105,8 +105,12 @@ def _parse_json_node_to_markdown(node: Dict[str, Any]) -> str:
     child_content = "".join(_parse_json_node_to_markdown(c) for c in content)
     tag_map = {
         "p": f"{child_content.strip()}\n\n",
+        "h1": f"# {child_content.strip()}\n\n",
         "h2": f"## {child_content.strip()}\n\n",
         "h3": f"### {child_content.strip()}\n\n",
+        "h4": f"#### {child_content.strip()}\n\n",
+        "h5": f"##### {child_content.strip()}\n\n",
+        "h6": f"###### {child_content.strip()}\n\n",
         "a": f"[{child_content}]({_abs_url(node.get('attrs', {}).get('href', ''))})",
         "ul": f"{child_content}\n",
         "li": f"- {child_content.strip()}\n",
@@ -114,10 +118,13 @@ def _parse_json_node_to_markdown(node: Dict[str, Any]) -> str:
             f"> {line}\n" for line in child_content.strip().split("\n")
         )
         + "\n",
+        "hr": "\n---\n",
         "strong": f"**{child_content}**",
         "b": f"**{child_content}**",
         "em": f"*{child_content}*",
         "i": f"*{child_content}*",
+        "code": f"`{child_content}`",
+        "pre": f"```\n{child_content}\n```\n",
     }
     return tag_map.get(tag, child_content)
 
