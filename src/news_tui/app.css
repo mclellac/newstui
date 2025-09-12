@@ -1,21 +1,103 @@
 /* default minimal styling (users can override with theme CSS) */
-Screen { background: $surface; color: $text; }
-Header { background: $primary; color: $text; }
-Footer { background: $primary-darken-1; color: $text; }
-#main { layout: horizontal; height: 1fr; padding: 1; }
-#left { width: 30; padding-right: 1; border: round $primary; }
-#right { width: 1fr; padding-left: 1; border: round $primary; }
-.pane-title { text-style: bold; padding: 0 1; }
-ListView { border: none; }
-ListItem { padding: 0 1; }
-ListItem:hover { background: $primary-lighten-2; }
-ListView > ListItem.--highlighted { background: $accent; color: $text; }
-.summary {
-    color: $text-muted;
-    padding-left: 2;
+Screen {
+  background: $surface;
+  color: $text;
 }
-#story-scroll { padding: 1 0; }
+
+Header {
+  background: $primary;
+  color: $text;
+}
+
+Footer {
+  background: $primary-darken-1;
+  color: $text;
+}
+
+#main {
+  layout: horizontal;
+  height: 1fr;
+  padding: 1;
+}
+
+#left {
+  width: 30;
+  padding-right: 1;
+  border: round $primary;
+}
+
+#right {
+  width: 1fr;
+  padding-left: 1;
+  border: round $primary;
+}
+
+.pane-title {
+  text-style: bold;
+  padding: 0 1;
+}
+
+ListView {
+  border: none;
+}
+
+ListItem {
+  padding: 0 1;
+}
+
+ListItem:hover {
+  background: $primary-lighten-2;
+}
+
+ListView > ListItem.--highlighted {
+  background: $accent;
+  color: $text;
+}
+
+.summary {
+  color: $text-muted;
+  padding-left: 2;
+}
+
+#story-scroll {
+  padding: 1 0;
+}
 
 .read {
-    opacity: 0.5;
+  opacity: 0.5;
+}
+
+/* Added styles */
+Input {
+    border: tall $background-lighten-2;
+    background: $background-darken-1;
+}
+Input:focus {
+    border: tall $accent;
+}
+
+DataTable {
+    border: tall $primary;
+    background: $surface;
+}
+
+DataTable:focus {
+    border: tall $accent;
+}
+
+Rule {
+    color: $primary-lighten-2;
+}
+
+LoadingIndicator {
+    color: $accent;
+}
+
+Markdown {
+    background: $surface;
+}
+
+StatusBar {
+    background: $primary-darken-1;
+    color: $text;
 }
