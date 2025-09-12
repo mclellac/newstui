@@ -22,6 +22,8 @@ from .config import (
     REQUEST_HEADERS,
     RETRY_ATTEMPTS,
     SECTIONS_PAGE_URL,
+    load_read_articles,
+    load_bookmarks,
 )
 from .datamodels import Section, Story
 
@@ -147,6 +149,8 @@ def get_sections_combined() -> List[Section]:
 
 
 def get_stories_from_url(url: str) -> List[Story]:
+    read_articles = load_read_articles()
+    bookmarked_urls = {b["url"] for b in load_bookmarks()}
     content = _retryable_fetch(url)
     if not content:
         return []
@@ -162,7 +166,16 @@ def get_stories_from_url(url: str) -> List[Story]:
             if p := a.find_next_sibling("p"):
                 summary = p.get_text(strip=True)
             if title and href:
-                stories.append(Story(title=title, url=href, flag=flag, summary=summary))
+                stories.append(
+                    Story(
+                        title=title,
+                        url=href,
+                        flag=flag,
+                        summary=summary,
+                        read=href in read_articles,
+                        bookmarked=href in bookmarked_urls,
+                    )
+                )
         return _unique_ordered_stories(stories)
     except Exception as e:
         logger.error("Failed to parse stories from %s: %s", url, e)

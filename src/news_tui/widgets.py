@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 from textual.app import ComposeResult
 from textual.widgets import ListItem, Static
+from textual.reactive import reactive
 
-from .datamodels import Section, Story
+from .datamodels import Section
 
 
 # --- UI Widgets ---
@@ -16,15 +19,22 @@ class SectionListItem(ListItem):
         yield Static(self.section.title)
 
 
-class StoryListItem(ListItem):
-    def __init__(self, story: Story):
-        super().__init__()
-        self.story = story
+class StatusBar(Static):
+    theme_name = reactive("default")
+    loading_status = reactive("")
 
-    def compose(self) -> ComposeResult:
-        title_text = self.story.title
-        if self.story.flag:
-            title_text = f"[b]{self.story.flag}[/] — {title_text}"
-        yield Static(title_text)
-        if self.story.summary:
-            yield Static(self.story.summary, classes="summary")
+    def on_mount(self) -> None:
+        self.set_interval(1, self.update_time)
+
+    def update_time(self) -> None:
+        time_str = datetime.now().strftime("%H:%M:%S")
+        status = f"Theme: {self.theme_name} | {time_str}"
+        if self.loading_status:
+            status = f"{status} | {self.loading_status}"
+        self.update(status)
+
+    def watch_theme_name(self, theme_name: str) -> None:
+        self.update_time()
+
+    def watch_loading_status(self, loading_status: str) -> None:
+        self.update_time()
