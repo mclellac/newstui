@@ -27,11 +27,13 @@ class RSSSource(BaseSource):
         feed = feedparser.parse(section.url)
         bookmarked_urls = {b["url"] for b in bookmarks}
         for entry in feed.entries:
+            summary_html = entry.get("summary", "")
+            summary_text = BeautifulSoup(summary_html, "lxml").get_text()
             stories.append(
                 Story(
                     title=entry["title"],
                     url=entry["link"],
-                    summary=entry["summary"],
+                    summary=summary_text,
                     read=entry["link"] in read_articles,
                     bookmarked=entry["link"] in bookmarked_urls,
                 )

@@ -38,6 +38,10 @@ class StatusBar(Static):
         if self.loading_status:
             status_items.append(self.loading_status)
 
+        key_color = "cyan"
+        if self.app.theme in THEMES:
+            key_color = THEMES[self.app.theme].accent
+        status_items.append(f"[b {key_color}]h[/] for help")
 
         self.update(" | ".join(status_items))
 

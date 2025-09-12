@@ -49,3 +49,28 @@ Then, you can specify the theme to use in your `config.json` file. For example, 
 ```
 
 This will load the `dracula.css` theme file from your `~/.config/news/themes` directory.
+
+### News Sources
+
+The application can be configured to use different news sources. The default news source is CBC News. You can change the news source by adding a `source` key to your `config.json` file. The available sources are `cbc` and `rss`.
+
+#### RSS
+
+To use an RSS feed as your news source, you need to configure the `rss` source in your `config.json` file. The `rss` source takes a `feeds` dictionary, where the keys are the names of the feeds and the values are the URLs of the feeds.
+
+Here is an example `config.json` file that uses the `rss` source with two feeds:
+
+```json
+{
+    "theme": "dracula",
+    "source": "rss",
+    "sources": {
+        "rss": {
+            "feeds": {
+                "Hacker News": "https://news.ycombinator.com/rss",
+                "Lobsters": "https://lobste.rs/rss"
+            }
+        }
+    }
+}
+```
