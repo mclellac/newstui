@@ -169,17 +169,14 @@ class NewsApp(App):
             if s.bookmarked:
                 flag = f"B {flag}".strip()
 
-            if s.read:
-                style = "dim"
-                table.add_row(
-                    Text(flag, style=style),
-                    Text(s.title, style=style),
-                    Text(s.summary or "", style=style),
-                    s,
-                    key=s.url,
-                )
-            else:
-                table.add_row(flag, s.title, s.summary or "", s, key=s.url)
+            style = "dim" if s.read else ""
+            table.add_row(
+                Text(flag, style=style),
+                Text(s.title, style=style),
+                Text(s.summary or "", style=style),
+                s,
+                key=s.url,
+            )
         table.visible = True
 
     def _handle_headlines_loaded(self, event: Worker.StateChanged) -> None:

@@ -28,10 +28,18 @@ class StatusBar(Static):
 
     def update_time(self) -> None:
         time_str = datetime.now().strftime("%H:%M:%S")
-        status = f"Theme: {self.theme_name} | {time_str}"
+        status_items = [f"Theme: {self.theme_name}", time_str]
         if self.loading_status:
-            status = f"{status} | {self.loading_status}"
-        self.update(status)
+            status_items.append(self.loading_status)
+
+        bindings = self.app.screen.bindings
+        shown_bindings = [b for b in bindings.values() if b.show]
+        bindings_text = " | ".join(
+            f"[b cyan]{b.key}[/] {b.description}" for b in shown_bindings
+        )
+        status_items.append(bindings_text)
+
+        self.update(" | ".join(status_items))
 
     def watch_theme_name(self, theme_name: str) -> None:
         self.update_time()
