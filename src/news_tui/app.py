@@ -7,6 +7,7 @@ from textual.binding import Binding
 from textual.command import CommandPalette, Hit, Hits, Provider
 from textual.containers import Horizontal, Vertical
 from textual.worker import Worker, WorkerState
+from rich.text import Text
 from textual.widgets import (
     DataTable,
     Header,
@@ -164,13 +165,21 @@ class NewsApp(App):
             table.visible = False
             return
         for s in stories:
-            classes = "read" if s.read else ""
             flag = s.flag or ""
             if s.bookmarked:
                 flag = f"B {flag}".strip()
-            table.add_row(
-                flag, s.title, s.summary or "", s, key=s.url, classes=classes
-            )
+
+            if s.read:
+                style = "dim"
+                table.add_row(
+                    Text(flag, style=style),
+                    Text(s.title, style=style),
+                    Text(s.summary or "", style=style),
+                    s,
+                    key=s.url,
+                )
+            else:
+                table.add_row(flag, s.title, s.summary or "", s, key=s.url)
         table.visible = True
 
     def _handle_headlines_loaded(self, event: Worker.StateChanged) -> None:
