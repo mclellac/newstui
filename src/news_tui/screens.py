@@ -10,7 +10,7 @@ from textual.worker import Worker, WorkerState
 from textual.widgets import Footer, Header, LoadingIndicator, Static
 
 from .datamodels import Story
-from .fetcher import get_story_content
+from .fetcher import Fetcher
 from .config import load_bookmarks
 from .themes import THEMES
 from textual.widgets import DataTable
@@ -36,9 +36,11 @@ class StoryViewScreen(Screen):
         Binding("r", "reload_story", "Reload"),
     ]
 
-    def __init__(self, story: Story):
+    def __init__(self, story: Story, fetcher: Fetcher, section: Section):
         super().__init__()
         self.story = story
+        self.fetcher = fetcher
+        self.section = section
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -65,7 +67,9 @@ class StoryViewScreen(Screen):
             pass
         # fetch in worker thread
         self.run_worker(
-            lambda: get_story_content(self.story.url), name="story_loader", thread=True
+            lambda: self.fetcher.get_story_content(self.story, self.section),
+            name="story_loader",
+            thread=True,
         )
 
     def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
@@ -137,3 +141,25 @@ class BookmarksScreen(Screen):
         bookmarks = load_bookmarks()
         for b in bookmarks:
             table.add_row(b["title"], b["summary"] or "")
+
+
+class HelpScreen(Screen):
+    BINDINGS = [
+        Binding("escape,q,h,left", "app.pop_screen", "Back"),
+    ]
+
+    def compose(self) -> ComposeResult:
+        yield Header()
+        yield Footer()
+        yield Static("Keybindings", classes="pane-title")
+        yield Static(
+            "q: Quit\n"
+            "r: Refresh\n"
+            "b: Bookmark\n"
+            "B: Show Bookmarks\n"
+            "h: Help\n"
+            "o: Open in browser\n"
+            "left: Navigate Left\n"
+            "right: Navigate Right\n"
+            "ctrl+p: Command Palette"
+        )

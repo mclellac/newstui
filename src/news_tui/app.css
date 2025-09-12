@@ -101,3 +101,8 @@ StatusBar {
     background: $primary-darken-1;
     color: $text;
 }
+
+.summary-text {
+    padding: 1;
+    height: 10;
+}
