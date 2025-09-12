@@ -16,7 +16,6 @@ from textual.widgets import (
     LoadingIndicator,
     Rule,
 )
-from textual.widgets.data_table import RowSelected
 
 from .config import (
     HOME_PAGE_URL,
@@ -205,7 +204,7 @@ class NewsApp(App):
                 self.current_section = event.item.section
                 self._load_headlines_for_section(self.current_section)
 
-    def on_data_table_row_selected(self, event: RowSelected) -> None:
+    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
         # Headline selected -> open StoryViewScreen.
         story = event.control.get_row(event.row_key)[-1]
         if story:
