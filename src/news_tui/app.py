@@ -27,8 +27,7 @@ from .config import (
 )
 from dataclasses import asdict
 from .datamodels import Section, Story
-from .fetcher import Fetcher
-from .sources.base import BaseSource
+from .sources.cbc import CBCSource
 from .screens import StoryViewScreen, BookmarksScreen, HelpScreen
 from .themes import THEMES
 from .widgets import SectionListItem, StatusBar
@@ -71,7 +70,6 @@ class NewsApp(App):
     def __init__(
         self,
         theme: Optional[str] = None,
-        source: Optional[BaseSource] = None,
         config: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ):
@@ -81,7 +79,8 @@ class NewsApp(App):
         self.stories: List[Story] = []
         self.read_articles: set[str] = set()
         self.bookmarks: List[dict] = []
-        self.fetcher = Fetcher(source)
+        cbc_config = config.get("sources", {}).get("cbc", {}) if config else {}
+        self.source = CBCSource(cbc_config)
         self.meta_sections = config.get("meta_sections", {}) if config else {}
 
     def compose(self) -> ComposeResult:
@@ -106,7 +105,7 @@ class NewsApp(App):
         self.bookmarks = load_bookmarks()
         self.screen.bindings = self.BINDINGS
         # Start loading sections on mount
-        self.run_worker(self.fetcher.get_sections, name="sections_loader", thread=True)
+        self.run_worker(self.source.get_sections, name="sections_loader", thread=True)
         # focus sections list if possible
         try:
             self.query_one("#sections-list").focus()
@@ -216,7 +215,7 @@ class NewsApp(App):
         table.clear()
         table.mount(LoadingIndicator())
         self.run_worker(
-            lambda: self.fetcher.get_stories(
+            lambda: self.source.get_stories(
                 section, self.read_articles, self.bookmarks
             ),
             name="headlines_loader",
@@ -237,12 +236,12 @@ class NewsApp(App):
 
         def _get_stories():
             all_stories = []
-            sections = self.query_one("#sections-list").children
+            all_sections = self.source.get_sections()
             for section_name in section_names:
-                for s in sections:
-                    if s.section.title == section_name:
-                        stories = self.fetcher.get_stories(
-                            s.section, self.read_articles, self.bookmarks
+                for s in all_sections:
+                    if s.title == section_name:
+                        stories = self.source.get_stories(
+                            s, self.read_articles, self.bookmarks
                         )
                         all_stories.extend(stories)
             return all_stories
@@ -265,7 +264,7 @@ class NewsApp(App):
         self.read_articles.add(story.url)
         save_read_articles(self.read_articles)
         self._update_headlines_table(self.stories)
-        self.push_screen(StoryViewScreen(story, self.fetcher, self.current_section))
+        self.push_screen(StoryViewScreen(story, self.source, self.current_section))
 
     def on_data_table_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
         summary_text = self.query_one("#summary-text", Static)

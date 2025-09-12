@@ -11,7 +11,6 @@ from typing import Optional
 from .app import NewsApp
 from .config import enable_debug_log_to_tmp, load_config
 from .themes import THEMES
-from .source_manager import get_source
 
 logger = logging.getLogger("news")
 
@@ -41,8 +40,7 @@ def main() -> None:
     logger.info("Using theme: %s", theme_name)
 
     try:
-        source = get_source(config)
-        app = NewsApp(theme=theme_name, source=source, config=config)
+        app = NewsApp(theme=theme_name, config=config)
         app.run()
     except Exception as e:
         logger.exception("Application crashed: %s", e)
