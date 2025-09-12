@@ -1,22 +1,22 @@
 Screen {
-    background: #002731;
-    color: #93a1a1;
+    background: #111c18;
+    color: #C1C497;
 }
 
 Header {
-    background: #003f4a;
-    color: #93a1a1;
+    background: #23372B;
+    color: #C1C497;
 }
 
 Footer {
-    background: #002731;
+    background: #23372B;
 }
 
 ListView > ListItem.--highlighted {
-    background: #2aa198;
-    color: #002731;
+    background: #549e6a;
+    color: #111c18;
 }
 
 ListItem:hover {
-    background: #0b4f5c;
+    background: #53685B;
 }
