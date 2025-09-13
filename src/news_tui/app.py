@@ -17,14 +17,15 @@ from textual.widgets import (
     Rule,
 )
 
+import sys
 from .config import (
     HOME_PAGE_URL,
     load_config,
     load_read_articles,
     load_bookmarks,
     save_bookmarks,
+    save_config,
     save_read_articles,
-    save_theme,
 )
 from dataclasses import asdict
 from .datamodels import Section, Story
@@ -341,9 +342,14 @@ class NewsApp(App):
         self.run_worker(self.source.get_sections, name="sections_loader", thread=True)
 
     def action_switch_theme(self, theme: str) -> None:
+        print(f"DIAGNOSTIC: action_switch_theme started. Switching to '{theme}'.", file=sys.stderr)
         self.theme = theme
-        save_theme(theme)
+        print(f"DIAGNOSTIC: self.config before modification: {self.config}", file=sys.stderr)
         self.config["theme"] = theme
+        print(f"DIAGNOSTIC: self.config after modification: {self.config}", file=sys.stderr)
+        print("DIAGNOSTIC: Calling save_config.", file=sys.stderr)
+        save_config(self.config)
+        print("DIAGNOSTIC: action_switch_theme finished.", file=sys.stderr)
 
     def action_toggle_left_pane(self) -> None:
         """Toggle the left pane."""
