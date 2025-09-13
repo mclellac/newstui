@@ -42,6 +42,6 @@ HeadlineItem > Horizontal > .headline-title {
     color: $text;
 }
 
-Markdown h1 {
+MarkdownH1 {
     color: $primary;
 }
