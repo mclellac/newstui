@@ -26,14 +26,13 @@ from ..config import (
     load_bookmarks,
 )
 from ..datamodels import Section, Story
-from .base import BaseSource
 
 logger = logging.getLogger("news")
 
 
-class CBCSource(BaseSource):
+class CBCSource:
     def __init__(self, config: Dict[str, Any]):
-        super().__init__(config)
+        self.config = config
         self.session = self._create_session()
 
     def _create_session(self) -> requests.Session:
