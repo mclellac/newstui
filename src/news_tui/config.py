@@ -17,6 +17,8 @@ MIN_ARTICLE_WORDS = 15
 CONFIG_PATH = os.path.expanduser("~/.config/news/config.json")
 READ_ARTICLES_FILE = os.path.expanduser("~/.config/news/read_articles.json")
 BOOKMARKS_FILE = os.path.expanduser("~/.config/news/bookmarks.json")
+CACHE_DIR = os.path.expanduser("~/.cache/news-tui")
+CACHE_TTL = 3600  # 1 hour
 
 REQUEST_HEADERS = {
     "User-Agent": (

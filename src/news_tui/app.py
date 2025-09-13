@@ -27,7 +27,7 @@ from .config import (
 )
 from dataclasses import asdict
 from .datamodels import Section, Story
-from .sources.cbc import CBCSource
+from .fetcher import Fetcher
 from .screens import BookmarksScreen, SettingsScreen, StoryViewScreen
 from .themes import THEMES
 from .widgets import HeadlineItem, SectionListItem, StatusBar
@@ -81,8 +81,7 @@ class NewsApp(App):
         self.read_articles: set[str] = set()
         self.bookmarks: List[dict] = []
         self.config = config or {}
-        cbc_config = self.config.get("sources", {}).get("cbc", {})
-        self.source = CBCSource(cbc_config)
+        self.fetcher = Fetcher(self.config)
         self.meta_sections = self.config.get("meta_sections", {})
 
     def compose(self) -> ComposeResult:
@@ -104,7 +103,7 @@ class NewsApp(App):
         self.bookmarks = load_bookmarks()
         self.screen.bindings = self.BINDINGS
         # Start loading sections on mount
-        self.run_worker(self.source.get_sections, name="sections_loader", thread=True)
+        self.run_worker(self.fetcher.get_sections, name="sections_loader", thread=True)
         # focus sections list if possible
         try:
             self.query_one("#sections-list").focus()
@@ -212,7 +211,7 @@ class NewsApp(App):
         headlines_list.clear()
         headlines_list.mount(LoadingIndicator())
         self.run_worker(
-            lambda: self.source.get_stories(
+            lambda: self.fetcher.get_stories(
                 section, self.read_articles, self.bookmarks
             ),
             name="headlines_loader",
@@ -231,24 +230,10 @@ class NewsApp(App):
         headlines_list.clear()
         headlines_list.mount(LoadingIndicator())
 
-        def _get_stories():
-            all_stories = []
-            seen_urls = set()
-            all_sections = self.source.get_sections()
-            for section_name in section_names:
-                for s in all_sections:
-                    if s.title == section_name:
-                        stories = self.source.get_stories(
-                            s, self.read_articles, self.bookmarks
-                        )
-                        for story in stories:
-                            if story.url not in seen_urls:
-                                all_stories.append(story)
-                                seen_urls.add(story.url)
-            return all_stories
-
         self.run_worker(
-            _get_stories,
+            lambda: self.fetcher.get_stories_for_meta_section(
+                section_names, self.read_articles, self.bookmarks
+            ),
             name="headlines_loader",
             thread=True,
         )
@@ -268,7 +253,7 @@ class NewsApp(App):
         self.read_articles.add(story.url)
         save_read_articles(self.read_articles)
         self._update_headlines_list(self.stories)
-        self.push_screen(StoryViewScreen(story, self.source, self.current_section))
+        self.push_screen(StoryViewScreen(story, self.fetcher, self.current_section))
 
     def action_refresh(self) -> None:
         if self.current_section:
@@ -337,7 +322,7 @@ class NewsApp(App):
         # reload config and sections
         self.config = load_config()
         self.meta_sections = self.config.get("meta_sections", {})
-        self.run_worker(self.source.get_sections, name="sections_loader", thread=True)
+        self.run_worker(self.fetcher.get_sections, name="sections_loader", thread=True)
 
     def action_switch_theme(self, theme: str) -> None:
         self.theme = theme

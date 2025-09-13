@@ -24,7 +24,7 @@ from textual.widgets import (
 
 from .config import load_bookmarks, save_config
 from .datamodels import Section, Story
-from .sources.cbc import CBCSource
+from .fetcher import Fetcher
 from .themes import THEMES
 
 # Markdown & scroll fallbacks for different Textual versions
@@ -51,10 +51,10 @@ class StoryViewScreen(Screen):
         Binding("r", "reload_story", "Reload"),
     ]
 
-    def __init__(self, story: Story, source: CBCSource, section: Section):
+    def __init__(self, story: Story, fetcher: Fetcher, section: Section):
         super().__init__()
         self.story = story
-        self.source = source
+        self.fetcher = fetcher
         self.section = section
 
     def compose(self) -> ComposeResult:
@@ -82,7 +82,7 @@ class StoryViewScreen(Screen):
             pass
         # fetch in worker thread
         self.run_worker(
-            lambda: self.source.get_story_content(self.story, self.section),
+            lambda: self.fetcher.get_story_content(self.story, self.section),
             name="story_loader",
             thread=True,
         )
@@ -192,7 +192,7 @@ class SettingsScreen(Screen):
 
     def load_sections(self) -> None:
         """Load sections in a worker."""
-        all_sections = self.app.source.get_sections()
+        all_sections = self.app.fetcher.get_sections()
         self.post_message(self.SectionsLoaded(all_sections))
 
     def on_settings_screen_sections_loaded(
