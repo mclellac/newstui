@@ -67,7 +67,7 @@ class CBCSource:
                 resp.raise_for_status()
                 logger.debug("Fetched %s OK", url)
                 content = resp.content
-                if self.cache:
+                if content and self.cache:
                     self.cache.set(url, base64.b64encode(content).decode("utf-8"))
                 return content
             except requests.RequestException as e:
