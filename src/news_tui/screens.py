@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import logging
 import webbrowser
 
 from textual.app import ComposeResult
 from textual.binding import Binding
+
+logger = logging.getLogger("news")
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.message import Message
 from textual.screen import Screen
@@ -19,7 +22,6 @@ from textual.widgets import (
     ListItem,
     ListView,
     LoadingIndicator,
-    MarkdownViewer,
     Static,
 )
 
@@ -28,16 +30,18 @@ from .datamodels import Section, Story
 from .sources.cbc import CBCSource
 from .themes import THEMES
 
+from textual.widgets import MarkdownViewer
+
 
 # --- Story screen (separate) ---
 class StoryViewScreen(Screen):
-
     class StoryContentLoaded(Message):
         """Posted when the story content is loaded."""
 
         def __init__(self, content: dict) -> None:
             self.content = content
             super().__init__()
+            logger.debug("StoryContentLoaded message created with content: %s", content)
 
     BINDINGS = [
         Binding("escape,q,b,left", "app.pop_screen", "Back"),
@@ -50,42 +54,48 @@ class StoryViewScreen(Screen):
         self.story = story
         self.source = source
         self.section = section
+        logger.debug("StoryViewScreen initialized for story: %s", self.story.url)
 
     def compose(self) -> ComposeResult:
         yield Header()
         yield Footer()
-        # loading indicator and scrollable Markdown
         loading = LoadingIndicator(id="story-loading")
         yield loading
-        yield VerticalScroll(
-            MarkdownViewer(id="story-markdown"), id="story-scroll"
-        )
+        yield VerticalScroll(MarkdownViewer(id="story-markdown"), id="story-scroll")
 
     def on_mount(self) -> None:
         self.title = self.story.title
-        # hide loading until the worker runs
         try:
             self.query_one("#story-loading", LoadingIndicator).display = False
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error("Error hiding loading indicator on mount: %s", e)
         self.load_story()
 
     def load_story(self) -> None:
+        logger.debug("LOAD_STORY: Starting to load story: %s", self.story.url)
         try:
             self.query_one("#story-loading", LoadingIndicator).display = True
             self.query_one("#story-scroll").display = False
-        except Exception:
-            pass
-        # fetch in worker thread
+            logger.debug("LOAD_STORY: Loading indicator displayed.")
+        except Exception as e:
+            logger.error("LOAD_STORY: Error managing loading indicators: %s", e)
         self.run_worker(self.fetch_story_content, name="story_loader", thread=True)
+        logger.debug("LOAD_STORY: Worker started.")
 
     def fetch_story_content(self) -> None:
         """Fetch story content in a worker."""
-        content = self.source.get_story_content(self.story, self.section)
-        self.post_message(self.StoryContentLoaded(content))
+        logger.debug("FETCH_STORY_CONTENT: Worker running for: %s", self.story.url)
+        try:
+            content = self.source.get_story_content(self.story, self.section)
+            logger.debug("FETCH_STORY_CONTENT: Content fetched: %s", content)
+            self.post_message(self.StoryContentLoaded(content))
+            logger.debug("FETCH_STORY_CONTENT: StoryContentLoaded message posted.")
+        except Exception as e:
+            logger.exception("FETCH_STORY_CONTENT: Exception while fetching content: %s", e)
 
     def on_story_content_loaded(self, message: StoryContentLoaded) -> None:
         """Handle StoryContentLoaded message."""
+        logger.debug("ON_STORY_CONTENT_LOADED: Message received: %s", message)
         self.query_one("#story-loading", LoadingIndicator).display = False
         self.query_one("#story-scroll").display = True
 
@@ -96,15 +106,21 @@ class StoryViewScreen(Screen):
         if self.app.theme in THEMES:
             error_color = THEMES[self.app.theme].error
 
+        logger.debug("ON_STORY_CONTENT_LOADED: Updating markdown view with result: %s", result)
         if isinstance(result, dict) and result.get("ok"):
-            md.go(result.get("content", ""))
+            content_to_render = result.get("content", "")
+            logger.debug("ON_STORY_CONTENT_LOADED: Rendering success content (len: %d)", len(content_to_render))
+            md.go(content_to_render)
         else:
             msg = (
                 result.get("content", "Unable to load article.")
                 if isinstance(result, dict)
                 else "Unable to load article."
             )
+            logger.error("ON_STORY_CONTENT_LOADED: Rendering failure content: %s", msg)
             md.go(f"[b {error_color}]{msg}[/]")
+        logger.debug("ON_STORY_CONTENT_LOADED: Finished updating markdown view.")
+
 
     def action_open_in_browser(self) -> None:
         webbrowser.open(self.story.url)
