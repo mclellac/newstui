@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import html
 import json
 import logging
@@ -12,6 +13,7 @@ from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+from ..cache import Cache
 from ..config import (
     DOMAIN_BASE,
     HOME_PAGE_URL,
@@ -22,8 +24,6 @@ from ..config import (
     REQUEST_HEADERS,
     RETRY_ATTEMPTS,
     SECTIONS_PAGE_URL,
-    load_read_articles,
-    load_bookmarks,
 )
 from ..datamodels import Section, Story
 
@@ -31,9 +31,10 @@ logger = logging.getLogger("news")
 
 
 class CBCSource:
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any], cache: Optional[Cache] = None):
         self.config = config
         self.session = self._create_session()
+        self.cache = cache
 
     def _create_session(self) -> requests.Session:
         s = requests.Session()
@@ -49,6 +50,15 @@ class CBCSource:
     def _retryable_fetch(
         self, url: str, timeout: int = HTTP_TIMEOUT, attempts: int = RETRY_ATTEMPTS
     ) -> Optional[bytes]:
+        """
+        Fetch a URL with retries and caching.
+        The cache stores the response content as a base64 encoded string.
+        """
+        if self.cache:
+            cached_content = self.cache.get(url)
+            if cached_content:
+                return base64.b64decode(cached_content)
+
         delay = INITIAL_RETRY_DELAY
         for attempt in range(1, attempts + 1):
             try:
@@ -56,7 +66,10 @@ class CBCSource:
                 resp = self.session.get(url, timeout=timeout)
                 resp.raise_for_status()
                 logger.debug("Fetched %s OK", url)
-                return resp.content
+                content = resp.content
+                if self.cache:
+                    self.cache.set(url, base64.b64encode(content).decode("utf-8"))
+                return content
             except requests.RequestException as e:
                 logger.debug("Fetch attempt %d failed for %s: %s", attempt, url, e)
                 if attempt == attempts:
