@@ -185,7 +185,7 @@ class SettingsScreen(Screen):
     def on_mount(self) -> None:
         """Load sections and populate lists."""
         self.title = "Settings"
-        self.run_worker(self.load_sections, name="load_settings_sections")
+        self.run_worker(self.load_sections, name="load_settings_sections", thread=True)
 
     def load_sections(self) -> None:
         """Load sections in a worker."""

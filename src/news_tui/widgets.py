@@ -3,10 +3,11 @@ from __future__ import annotations
 from datetime import datetime
 
 from textual.app import ComposeResult
+from textual.containers import Horizontal
 from textual.widgets import ListItem, Static
 from textual.reactive import reactive
 
-from .datamodels import Section
+from .datamodels import Section, Story
 from .themes import THEMES
 
 
@@ -18,6 +19,18 @@ class SectionListItem(ListItem):
 
     def compose(self) -> ComposeResult:
         yield Static(self.section.title)
+
+
+class HeadlineItem(ListItem):
+    def __init__(self, story: Story):
+        super().__init__()
+        self.story = story
+
+    def compose(self) -> ComposeResult:
+        with Horizontal():
+            yield Static(self.story.section, classes="headline-section")
+            yield Static(self.story.flag or "", classes="headline-flag")
+            yield Static(self.story.title, classes="headline-title")
 
 
 class StatusBar(Static):
