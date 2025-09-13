@@ -185,11 +185,13 @@ class SettingsScreen(Screen):
     def on_mount(self) -> None:
         """Load sections and populate lists."""
         self.title = "Settings"
-        self.run_worker(self.load_sections, name="load_settings_sections", thread=True)
+        self.run_worker(self.load_sections, name="load_settings_sections")
 
-    def load_sections(self) -> None:
-        # This will run in a worker thread
-        all_sections = self.app.source.get_sections()
+    async def load_sections(self) -> None:
+        """Load sections in a worker."""
+        all_sections = await self.app.run_in_executor(
+            None, self.app.source.get_sections
+        )
         self.post_message(self.SectionsLoaded(all_sections))
 
     async def on_settings_screen_sections_loaded(

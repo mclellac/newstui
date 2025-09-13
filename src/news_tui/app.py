@@ -62,7 +62,7 @@ class NewsApp(App):
         Binding("r", "refresh", "Refresh"),
         Binding("b", "bookmark", "Bookmark"),
         Binding("B", "show_bookmarks", "Show Bookmarks"),
-        Binding("h", "toggle_help", "Toggle Help"),
+        Binding("h", "app.toggle_class('TextualHelp')", "Toggle Help"),
         Binding("s", "show_settings", "Settings"),
         Binding("left", "nav_left", "Navigate Left"),
         Binding("right", "nav_right", "Navigate Right"),
