@@ -29,9 +29,12 @@ from .themes import THEMES
 
 # Markdown & scroll fallbacks for different Textual versions
 try:
-    from textual.widgets import Markdown  # type: ignore
+    from textual.widgets import MarkdownViewer as Markdown  # type: ignore
 except Exception:
-    Markdown = Static  # type: ignore
+    try:
+        from textual.widgets import Markdown  # type: ignore
+    except Exception:
+        Markdown = Static  # type: ignore
 
 try:
     from textual.containers import VerticalScroll  # some versions

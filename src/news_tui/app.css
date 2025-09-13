@@ -106,9 +106,9 @@ Markdown {
     background: $surface;
 }
 
-Markdown h1,
-Markdown h2,
-Markdown h3 {
+MarkdownH1,
+MarkdownH2,
+MarkdownH3 {
     text-style: bold;
 }
 
