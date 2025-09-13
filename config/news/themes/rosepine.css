@@ -1,35 +1,42 @@
 
+$background: #191724;
+$surface: #1f1d2e;
+$primary: #eb6f92;
+$secondary: #31748f;
+$text: #e0def4;
+$text-muted: #6e6a86;
+
 Screen {
-    background: #191724;
-    color: #e0def4;
+    background: $background;
+    color: $text;
 }
 
 Header {
-    background: #31748f;
-    color: #e0def4;
+    background: $secondary;
+    color: $text;
 }
 
 Footer {
-    background: #1f1d2e;
+    background: $surface;
 }
 
 ListView > ListItem.--highlighted {
-    background: #eb6f92;
-    color: #e0def4;
+    background: $primary;
+    color: $background;
 }
 
 ListItem:hover {
-    background: #26233a;
+    background: lighten($surface, 5%);
 }
 
 HeadlineItem > Horizontal > .headline-section {
-    color: #e0def4;
+    color: $text;
 }
 
 HeadlineItem > Horizontal > .headline-flag {
-    color: #eb6f92;
+    color: $primary;
 }
 
 HeadlineItem > Horizontal > .headline-title {
-    color: #e0def4;
+    color: $text;
 }

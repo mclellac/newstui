@@ -1,34 +1,40 @@
+$background: #282a36;
+$surface: #44475a;
+$primary: #bd93f9;
+$text: #f8f8f2;
+$text-muted: #6272a4;
+
 Screen {
-    background: #282a36;
-    color: #f8f8f2;
+    background: $background;
+    color: $text;
 }
 
 Header {
-    background: #44475a;
-    color: #f8f8f2;
+    background: $surface;
+    color: $text;
 }
 
 Footer {
-    background: #282a36;
+    background: $background;
 }
 
 ListView > ListItem.--highlighted {
-    background: #bd93f9;
-    color: #f8f8f2;
+    background: $primary;
+    color: $background;
 }
 
 ListItem:hover {
-    background: #6272a4;
+    background: $text-muted;
 }
 
 HeadlineItem > Horizontal > .headline-section {
-    color: #f8f8f2;
+    color: $text;
 }
 
 HeadlineItem > Horizontal > .headline-flag {
-    color: #bd93f9;
+    color: $primary;
 }
 
 HeadlineItem > Horizontal > .headline-title {
-    color: #f8f8f2;
+    color: $text;
 }
