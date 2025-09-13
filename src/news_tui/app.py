@@ -61,7 +61,6 @@ class NewsApp(App):
         Binding("r", "refresh", "Refresh"),
         Binding("b", "bookmark", "Bookmark"),
         Binding("B", "show_bookmarks", "Show Bookmarks"),
-        Binding("h", "toggle_help", "Toggle Help"),
         Binding("s", "show_settings", "Settings"),
         Binding("left", "nav_left", "Navigate Left"),
         Binding("right", "nav_right", "Navigate Right"),
@@ -347,27 +346,3 @@ class NewsApp(App):
         """Toggle the left pane."""
         left_pane = self.query_one("#left")
         left_pane.display = not left_pane.display
-
-    def action_toggle_help(self) -> None:
-        """Toggle the help screen."""
-        from textual.screen import ModalScreen
-        from textual.widgets import Label
-
-        class HelpScreen(ModalScreen):
-            def compose(self) -> ComposeResult:
-                yield Vertical(
-                    Label("Help"),
-                    Label("q: Quit"),
-                    Label("r: Refresh"),
-                    Label("b: Bookmark"),
-                    Label("B: Show Bookmarks"),
-                    Label("h: Toggle Help"),
-                    Label("s: Settings"),
-                    Label("left: Navigate Left"),
-                    Label("right: Navigate Right"),
-                    Label("ctrl+p: Command Palette"),
-                    Label("ctrl+l: Toggle Sections"),
-                    id="help-dialog",
-                )
-
-        self.push_screen(HelpScreen())
