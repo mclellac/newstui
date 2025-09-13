@@ -79,6 +79,7 @@ Input:focus {
 DataTable {
     border: tall $primary;
     background: $surface;
+    text-wrap: wrap;
 }
 
 DataTable:focus {
@@ -105,4 +106,27 @@ StatusBar {
 .summary-text {
     padding: 1;
     height: 10;
+}
+
+#settings-container {
+    layout: horizontal;
+    height: 1fr;
+    padding: 1;
+}
+
+#settings-left {
+    width: 1fr;
+    padding-right: 1;
+    border: round $primary;
+}
+
+#settings-right {
+    width: 2fr;
+    padding-left: 1;
+    border: round $primary;
+}
+
+#save-settings {
+    width: 100%;
+    margin: 1 0;
 }

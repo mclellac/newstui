@@ -7,6 +7,7 @@ from typing import Optional
 class Story:
     title: str
     url: str
+    section: str
     flag: Optional[str] = None
     summary: Optional[str] = None
     read: bool = False
