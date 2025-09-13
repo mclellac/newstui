@@ -24,6 +24,7 @@ from .config import (
     load_bookmarks,
     save_bookmarks,
     save_read_articles,
+    save_theme,
 )
 from dataclasses import asdict
 from .datamodels import Section, Story
@@ -341,6 +342,8 @@ class NewsApp(App):
 
     def action_switch_theme(self, theme: str) -> None:
         self.theme = theme
+        save_theme(theme)
+        self.config["theme"] = theme
 
     def action_toggle_left_pane(self) -> None:
         """Toggle the left pane."""

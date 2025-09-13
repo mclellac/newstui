@@ -31,6 +31,14 @@ from .themes import THEMES
 
 # --- Story screen (separate) ---
 class StoryViewScreen(Screen):
+
+    class StoryContentLoaded(Message):
+        """Posted when the story content is loaded."""
+
+        def __init__(self, content: dict) -> None:
+            self.content = content
+            super().__init__()
+
     BINDINGS = [
         Binding("escape,q,b,left", "app.pop_screen", "Back"),
         Binding("o", "open_in_browser", "Open in browser"),
@@ -69,51 +77,34 @@ class StoryViewScreen(Screen):
         except Exception:
             pass
         # fetch in worker thread
-        self.run_worker(
-            lambda: self.source.get_story_content(self.story, self.section),
-            name="story_loader",
-            thread=True,
-        )
+        self.run_worker(self.fetch_story_content, name="story_loader", thread=True)
 
-    def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
-        if getattr(event.worker, "name", None) != "story_loader":
-            return
+    def fetch_story_content(self) -> None:
+        """Fetch story content in a worker."""
+        content = self.source.get_story_content(self.story, self.section)
+        self.post_message(self.StoryContentLoaded(content))
+
+    def on_story_content_loaded(self, message: StoryContentLoaded) -> None:
+        """Handle StoryContentLoaded message."""
+        self.query_one("#story-loading", LoadingIndicator).display = False
+        self.query_one("#story-scroll").display = True
+
+        result = message.content
+        md = self.query_one(MarkdownViewer)
 
         error_color = "red"
         if self.app.theme in THEMES:
             error_color = THEMES[self.app.theme].error
 
-        # Only act when worker finished (SUCCESS) or otherwise finished (non-running).
-        if event.state is WorkerState.SUCCESS:
-            result = getattr(event.worker, "result", None) or {
-                "ok": False,
-                "content": "No content",
-            }
-            try:
-                self.query_one("#story-loading", LoadingIndicator).display = False
-                self.query_one("#story-scroll").display = True
-            except Exception:
-                pass
-            md = self.query_one(MarkdownViewer)
-            if isinstance(result, dict) and result.get("ok"):
-                md.go(result.get("content", ""))
-            else:
-                msg = (
-                    result.get("content", "Unable to load article.")
-                    if isinstance(result, dict)
-                    else "Unable to load article."
-                )
-                md.go(f"[b {error_color}]{msg}[/]")
+        if isinstance(result, dict) and result.get("ok"):
+            md.go(result.get("content", ""))
         else:
-            # worker not SUCCESS; if it's not running/pending treat as failure
-            if event.state not in (WorkerState.PENDING, WorkerState.RUNNING):
-                try:
-                    self.query_one("#story-loading", LoadingIndicator).display = False
-                    self.query_one("#story-scroll").display = True
-                    md = self.query_one(MarkdownViewer)
-                    md.go(f"[b {error_color}]Unable to load article[/]")
-                except Exception:
-                    pass
+            msg = (
+                result.get("content", "Unable to load article.")
+                if isinstance(result, dict)
+                else "Unable to load article."
+            )
+            md.go(f"[b {error_color}]{msg}[/]")
 
     def action_open_in_browser(self) -> None:
         webbrowser.open(self.story.url)
