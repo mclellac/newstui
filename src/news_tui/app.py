@@ -29,7 +29,7 @@ from .config import (
 from dataclasses import asdict
 from .datamodels import Section, Story
 from .sources.cbc import CBCSource
-from .screens import BookmarksScreen, HelpScreen, SettingsScreen, StoryViewScreen
+from .screens import BookmarksScreen, SettingsScreen, StoryViewScreen
 from .themes import THEMES
 from .widgets import SectionListItem, StatusBar
 
@@ -62,7 +62,7 @@ class NewsApp(App):
         Binding("r", "refresh", "Refresh"),
         Binding("b", "bookmark", "Bookmark"),
         Binding("B", "show_bookmarks", "Show Bookmarks"),
-        Binding("h", "show_help", "Help"),
+        Binding("h", "toggle_help", "Toggle Help"),
         Binding("s", "show_settings", "Settings"),
         Binding("left", "nav_left", "Navigate Left"),
         Binding("right", "nav_right", "Navigate Right"),
@@ -350,9 +350,6 @@ class NewsApp(App):
 
     def action_show_bookmarks(self) -> None:
         self.push_screen(BookmarksScreen())
-
-    def action_show_help(self) -> None:
-        self.push_screen(HelpScreen())
 
     def action_show_settings(self) -> None:
         """Show the settings screen."""

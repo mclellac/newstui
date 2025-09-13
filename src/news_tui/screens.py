@@ -155,23 +155,6 @@ class BookmarksScreen(Screen):
             table.add_row(b["title"], b["summary"] or "")
 
 
-class HelpScreen(Screen):
-    BINDINGS = [
-        Binding("escape,q,h,left", "app.pop_screen", "Back"),
-    ]
-
-    def compose(self) -> ComposeResult:
-        yield Header()
-        yield Footer()
-        yield Static("Keybindings", classes="pane-title")
-
-        bindings_text = ""
-        for b in self.app.BINDINGS:
-            bindings_text += f"{b.key}: {b.description}\n"
-
-        yield Static(bindings_text)
-
-
 class SettingsScreen(Screen):
     """Screen for app settings."""
 
@@ -202,7 +185,7 @@ class SettingsScreen(Screen):
     def on_mount(self) -> None:
         """Load sections and populate lists."""
         self.title = "Settings"
-        self.run_worker(self.load_sections, name="load_settings_sections")
+        self.run_worker(self.load_sections, name="load_settings_sections", thread=True)
 
     def load_sections(self) -> None:
         # This will run in a worker thread
