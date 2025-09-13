@@ -249,6 +249,7 @@ class NewsApp(App):
 
         def _get_stories():
             all_stories = []
+            seen_urls = set()
             all_sections = self.source.get_sections()
             for section_name in section_names:
                 for s in all_sections:
@@ -256,7 +257,10 @@ class NewsApp(App):
                         stories = self.source.get_stories(
                             s, self.read_articles, self.bookmarks
                         )
-                        all_stories.extend(stories)
+                        for story in stories:
+                            if story.url not in seen_urls:
+                                all_stories.append(story)
+                                seen_urls.add(story.url)
             return all_stories
 
         self.run_worker(
