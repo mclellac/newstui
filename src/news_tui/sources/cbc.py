@@ -111,6 +111,7 @@ class CBCSource:
                         Story(
                             title=title,
                             url=href,
+                            section=section.title,
                             flag=flag,
                             summary=summary,
                             read=href in read_articles,

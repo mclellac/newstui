@@ -4,7 +4,7 @@ import webbrowser
 
 from textual.app import ComposeResult
 from textual.binding import Binding
-from textual.containers import Vertical
+from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.message import Message
 from textual.screen import Screen
 from textual.worker import Worker, WorkerState
@@ -170,31 +170,29 @@ class SettingsScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Header()
         yield Footer()
-        with VerticalScroll(id="settings"):
-            yield Label("Sections")
-            yield ListView(id="sections-list")
-
-            yield Label("Meta Sections")
-            yield Input(placeholder="Meta section name", id="meta-section-name")
-            yield Label("Constituent Sections")
-            yield ListView(id="meta-sections-constituents")
-            yield Button("Create Meta Section", id="create-meta-section")
-
-            yield Button("Save", id="save-settings")
+        with Horizontal(id="settings-container"):
+            with Vertical(id="settings-left"):
+                yield Label("Sections")
+                yield ListView(id="sections-list")
+            with Vertical(id="settings-right"):
+                yield Label("Meta Sections")
+                yield Input(placeholder="Meta section name", id="meta-section-name")
+                yield Label("Constituent Sections")
+                yield ListView(id="meta-sections-constituents")
+                yield Button("Create Meta Section", id="create-meta-section")
+        yield Button("Save", id="save-settings")
 
     def on_mount(self) -> None:
         """Load sections and populate lists."""
         self.title = "Settings"
         self.run_worker(self.load_sections, name="load_settings_sections")
 
-    async def load_sections(self) -> None:
+    def load_sections(self) -> None:
         """Load sections in a worker."""
-        all_sections = await self.app.run_in_executor(
-            None, self.app.source.get_sections
-        )
+        all_sections = self.app.source.get_sections()
         self.post_message(self.SectionsLoaded(all_sections))
 
-    async def on_settings_screen_sections_loaded(
+    def on_settings_screen_sections_loaded(
         self, message: SettingsScreen.SectionsLoaded
     ) -> None:
         sections_list = self.query_one("#sections-list", ListView)

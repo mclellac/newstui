@@ -67,6 +67,7 @@ class NewsApp(App):
         Binding("left", "nav_left", "Navigate Left"),
         Binding("right", "nav_right", "Navigate Right"),
         Binding("ctrl+p", "command_palette", "Commands"),
+        Binding("ctrl+l", "toggle_left_pane", "Toggle Sections"),
     ]
 
     def __init__(
@@ -118,6 +119,7 @@ class NewsApp(App):
         # Configure the headlines table
         table = self.query_one(DataTable)
         table.cursor_type = "row"
+        table.add_column("Section", width=15)
         table.add_column("Flag", width=10)
         table.add_column("Title")
         table.add_column("story", width=0)
@@ -197,6 +199,7 @@ class NewsApp(App):
 
             style = "dim" if s.read else ""
             table.add_row(
+                Text(s.section, style=style),
                 Text(flag, style=style),
                 Text(s.title, style=style),
                 s,
@@ -368,3 +371,8 @@ class NewsApp(App):
 
     def action_switch_theme(self, theme: str) -> None:
         self.theme = theme
+
+    def action_toggle_left_pane(self) -> None:
+        """Toggle the left pane."""
+        left_pane = self.query_one("#left")
+        left_pane.display = not left_pane.display

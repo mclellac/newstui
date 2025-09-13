@@ -42,6 +42,7 @@ class StatusBar(Static):
         if self.app.theme in THEMES:
             key_color = THEMES[self.app.theme].accent
         status_items.append(f"[b {key_color}]h[/] for help")
+        status_items.append(f"[b {key_color}]ctrl+l[/] to toggle sections")
 
         self.update(" | ".join(status_items))
 
