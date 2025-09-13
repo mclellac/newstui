@@ -5,7 +5,7 @@ import logging
 import os
 import re
 from datetime import datetime
-from typing import Optional
+from typing import Any, Dict, Optional
 
 # --- Configuration ---
 HOME_PAGE_URL = "https://www.cbc.ca/lite"
@@ -107,6 +107,17 @@ def load_config() -> Dict[str, Any]:
     except (IOError, json.JSONDecodeError) as e:
         logger.error("Failed to load config from %s: %s", CONFIG_PATH, e)
         return {}
+
+
+def save_config(config: Dict[str, Any]) -> None:
+    """Save the main configuration file."""
+    try:
+        os.makedirs(os.path.dirname(CONFIG_PATH), exist_ok=True)
+        with open(CONFIG_PATH, "w") as f:
+            json.dump(config, f, indent=2)
+        logger.info("Saved config to %s", CONFIG_PATH)
+    except IOError as e:
+        logger.error("Failed to save config to %s: %s", CONFIG_PATH, e)
 
 
 def load_theme_name_from_config() -> Optional[str]:

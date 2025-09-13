@@ -20,15 +20,16 @@ from textual.widgets import (
 
 from .config import (
     HOME_PAGE_URL,
+    load_config,
     load_read_articles,
-    save_read_articles,
     load_bookmarks,
     save_bookmarks,
+    save_read_articles,
 )
 from dataclasses import asdict
 from .datamodels import Section, Story
 from .sources.cbc import CBCSource
-from .screens import StoryViewScreen, BookmarksScreen, HelpScreen
+from .screens import BookmarksScreen, HelpScreen, SettingsScreen, StoryViewScreen
 from .themes import THEMES
 from .widgets import SectionListItem, StatusBar
 
@@ -62,6 +63,7 @@ class NewsApp(App):
         Binding("b", "bookmark", "Bookmark"),
         Binding("B", "show_bookmarks", "Show Bookmarks"),
         Binding("h", "show_help", "Help"),
+        Binding("s", "show_settings", "Settings"),
         Binding("left", "nav_left", "Navigate Left"),
         Binding("right", "nav_right", "Navigate Right"),
         Binding("ctrl+p", "command_palette", "Commands"),
@@ -70,7 +72,7 @@ class NewsApp(App):
     def __init__(
         self,
         theme: Optional[str] = None,
-        config: Optional[Dict[str, Any]] = None,
+        config: Optional[dict[str, Any]] = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -79,9 +81,10 @@ class NewsApp(App):
         self.stories: List[Story] = []
         self.read_articles: set[str] = set()
         self.bookmarks: List[dict] = []
-        cbc_config = config.get("sources", {}).get("cbc", {}) if config else {}
+        self.config = config or {}
+        cbc_config = self.config.get("sources", {}).get("cbc", {})
         self.source = CBCSource(cbc_config)
-        self.meta_sections = config.get("meta_sections", {}) if config else {}
+        self.meta_sections = self.config.get("meta_sections", {})
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -149,6 +152,12 @@ class NewsApp(App):
         sections = getattr(event.worker, "result", None) or [
             Section("Home", HOME_PAGE_URL)
         ]
+
+        # Filter sections based on config
+        enabled_sections = self.config.get("sections")
+        if enabled_sections:
+            sections = [s for s in sections if s.title in enabled_sections]
+
         all_sections = sections.copy()
         for meta_section_name in self.meta_sections:
             all_sections.insert(
@@ -161,6 +170,10 @@ class NewsApp(App):
             self.current_section = all_sections[0]
             # load headlines for the first section
             self._load_headlines_for_section(self.current_section)
+        else:
+            # No sections, clear headlines
+            self.query_one(DataTable).clear()
+            self.query_one("#summary-text", Static).update("No sections selected.")
 
     def _handle_headlines_error(self, event: Worker.StateChanged) -> None:
         self.query_one(StatusBar).loading_status = "Error loading headlines."
@@ -272,7 +285,10 @@ class NewsApp(App):
         if story and story.summary:
             summary_text.update(story.summary)
         else:
-            summary_text.update("No summary available.")
+            summary_text.update(
+                "No summary available for this story. "
+                "Press Enter to read the full article."
+            )
 
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
         # Headline selected -> open StoryViewScreen.
@@ -337,6 +353,17 @@ class NewsApp(App):
 
     def action_show_help(self) -> None:
         self.push_screen(HelpScreen())
+
+    def action_show_settings(self) -> None:
+        """Show the settings screen."""
+        self.push_screen(SettingsScreen(), self.on_settings_closed)
+
+    def on_settings_closed(self, _: Any) -> None:
+        """Called when settings screen is closed."""
+        # reload config and sections
+        self.config = load_config()
+        self.meta_sections = self.config.get("meta_sections", {})
+        self.run_worker(self.source.get_sections, name="sections_loader", thread=True)
 
     def action_switch_theme(self, theme: str) -> None:
         self.theme = theme
