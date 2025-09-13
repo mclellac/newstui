@@ -27,7 +27,7 @@ class HeadlineItem(ListItem):
         self.story = story
 
     def compose(self) -> ComposeResult:
-        with Horizontal():
+        with Horizontal(classes="headline-container"):
             yield Static(self.story.section, classes="headline-section")
             yield Static(self.story.flag or "", classes="headline-flag")
             yield Static(self.story.title, classes="headline-title")

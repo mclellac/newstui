@@ -42,7 +42,6 @@ ListView {
 }
 
 ListItem {
-  padding: 0 1;
 }
 
 ListItem:hover {
@@ -131,9 +130,17 @@ StatusBar {
     margin: 1 0;
 }
 
+SectionListItem {
+    padding: 0 1;
+}
+
 HeadlineItem {
     height: auto;
     padding: 0 1;
+}
+
+.headline-container {
+    height: auto;
 }
 
 .headline-section {
