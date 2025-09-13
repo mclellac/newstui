@@ -57,6 +57,7 @@ class CBCSource:
         if self.cache:
             cached_content = self.cache.get(url)
             if cached_content:
+                logger.debug("Cache hit for %s. Content length: %d", url, len(cached_content))
                 return base64.b64decode(cached_content)
 
         delay = INITIAL_RETRY_DELAY
@@ -67,8 +68,11 @@ class CBCSource:
                 resp.raise_for_status()
                 logger.debug("Fetched %s OK", url)
                 content = resp.content
+                logger.debug("Fetched raw content for %s. Length: %d", url, len(content))
                 if content and self.cache:
-                    self.cache.set(url, base64.b64encode(content).decode("utf-8"))
+                    encoded_content = base64.b64encode(content).decode("utf-8")
+                    self.cache.set(url, encoded_content)
+                    logger.debug("Cached content for %s. Encoded length: %d", url, len(encoded_content))
                 return content
             except requests.RequestException as e:
                 logger.debug("Fetch attempt %d failed for %s: %s", attempt, url, e)
@@ -137,9 +141,14 @@ class CBCSource:
             return []
 
     def get_story_content(self, story: Story, section: Section) -> Dict[str, Any]:
+        logger.debug("Getting story content for: %s", story.url)
         content_bytes = self._retryable_fetch(story.url)
         if not content_bytes:
+            logger.error("Failed to fetch article content for %s", story.url)
             return {"ok": False, "content": "Failed to fetch article."}
+
+        logger.debug("Article content fetched for %s. Length: %d", story.url, len(content_bytes))
+
         try:
             soup = BeautifulSoup(content_bytes, "lxml")
             json_script = soup.find("script", id="__NEXT_DATA__")
@@ -162,19 +171,23 @@ class CBCSource:
                         )
                     full = html.unescape("".join(parts)).strip()
                     if len(full.split()) > MIN_ARTICLE_WORDS:
+                        logger.debug("Successfully parsed story from JSON for %s. Content length: %d", story.url, len(full))
                         return {"ok": True, "content": full}
-                except Exception:
+                except Exception as e:
                     logger.debug(
-                        "JSON parse failed for %s; falling back to paragraphs",
-                        story.url,
+                        "JSON parse failed for %s: %s. Falling back to paragraphs.",
+                        story.url, e
                     )
             main = soup.find("main") or soup
             paras = [p.get_text(" ", strip=True) for p in main.find_all("p")]
             candidate = "\n\n".join([p for p in paras if p]).strip()
             if candidate and not _is_placeholder_text(candidate):
+                logger.debug("Successfully parsed story from paragraphs for %s. Content length: %d", story.url, len(candidate))
                 return {"ok": True, "content": candidate}
         except Exception as e:
             logger.error("Failed to parse story content from %s: %s", story.url, e)
+
+        logger.error("Could not extract valid article content for %s", story.url)
         return {"ok": False, "content": "Could not extract valid article content."}
 
 

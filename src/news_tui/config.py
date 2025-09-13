@@ -126,3 +126,14 @@ def load_theme_name_from_config() -> Optional[str]:
     """Return theme name if configured and present; else None."""
     config = load_config()
     return config.get("theme")
+
+
+def save_theme(theme_name: str) -> None:
+    """Load the config, update the theme, and save it back."""
+    try:
+        config = load_config()
+        config["theme"] = theme_name
+        save_config(config)
+        logger.info("Theme '%s' saved to config.", theme_name)
+    except Exception as e:
+        logger.error("Failed to save theme to config: %s", e)
