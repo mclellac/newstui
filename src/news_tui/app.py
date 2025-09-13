@@ -23,7 +23,6 @@ from .config import (
     load_read_articles,
     load_bookmarks,
     save_bookmarks,
-    save_config,
     save_read_articles,
 )
 from dataclasses import asdict
@@ -342,8 +341,6 @@ class NewsApp(App):
 
     def action_switch_theme(self, theme: str) -> None:
         self.theme = theme
-        self.config["theme"] = theme
-        save_config(self.config)
 
     def action_toggle_left_pane(self) -> None:
         """Toggle the left pane."""
