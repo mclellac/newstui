@@ -47,9 +47,8 @@ def enable_debug_log_to_tmp() -> str:
     fmt = logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
     fh.setFormatter(fmt)
     logger.addHandler(fh)
-    logging.getLogger().addHandler(fh)
     logger.setLevel(logging.DEBUG)
-    logging.getLogger().setLevel(logging.DEBUG)
+    logger.propagate = False  # Don't pass messages up to the root logger
     logger.debug("Debug logging enabled to %s", debug_path)
     return debug_path
 
@@ -111,18 +110,27 @@ def load_config() -> Dict[str, Any]:
 
 def save_config(config: Dict[str, Any]) -> None:
     """Save the main configuration file."""
-    logger.debug("Attempting to save config to %s", CONFIG_PATH)
-    logger.debug("Config dictionary to be saved: %s", config)
     try:
         os.makedirs(os.path.dirname(CONFIG_PATH), exist_ok=True)
         with open(CONFIG_PATH, "w") as f:
             json.dump(config, f, indent=2)
-        logger.info("Successfully saved config to %s", CONFIG_PATH)
-    except Exception as e:
-        logger.exception("CRITICAL: Failed to save config to %s: %s", CONFIG_PATH, e)
+        logger.info("Saved config to %s", CONFIG_PATH)
+    except IOError as e:
+        logger.error("Failed to save config to %s: %s", CONFIG_PATH, e)
 
 
 def load_theme_name_from_config() -> Optional[str]:
     """Return theme name if configured and present; else None."""
     config = load_config()
     return config.get("theme")
+
+
+def save_theme(theme_name: str) -> None:
+    """Load the config, update the theme, and save it back."""
+    try:
+        config = load_config()
+        config["theme"] = theme_name
+        save_config(config)
+        logger.info("Theme '%s' saved to config.", theme_name)
+    except Exception as e:
+        logger.error("Failed to save theme to config: %s", e)
