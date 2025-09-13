@@ -17,19 +17,16 @@ from textual.widgets import (
     Rule,
 )
 
-import logging
 from .config import (
     HOME_PAGE_URL,
     load_config,
     load_read_articles,
     load_bookmarks,
     save_bookmarks,
-    save_config,
     save_read_articles,
+    save_theme,
 )
 from dataclasses import asdict
-
-logger = logging.getLogger("news")
 from .datamodels import Section, Story
 from .sources.cbc import CBCSource
 from .screens import BookmarksScreen, SettingsScreen, StoryViewScreen
@@ -344,15 +341,9 @@ class NewsApp(App):
         self.run_worker(self.source.get_sections, name="sections_loader", thread=True)
 
     def action_switch_theme(self, theme: str) -> None:
-        logger.debug("ACTION_SWITCH_THEME: action started.")
-        logger.debug("ACTION_SWITCH_THEME: theme to switch to: %s", theme)
         self.theme = theme
-        logger.debug("ACTION_SWITCH_THEME: self.config before modification: %s", self.config)
+        save_theme(theme)
         self.config["theme"] = theme
-        logger.debug("ACTION_SWITCH_THEME: self.config after modification: %s", self.config)
-        logger.debug("ACTION_SWITCH_THEME: calling save_config.")
-        save_config(self.config)
-        logger.debug("ACTION_SWITCH_THEME: action finished.")
 
     def action_toggle_left_pane(self) -> None:
         """Toggle the left pane."""
