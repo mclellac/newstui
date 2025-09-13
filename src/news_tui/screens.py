@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 import webbrowser
 
 from textual.app import ComposeResult
@@ -20,14 +19,28 @@ from textual.widgets import (
     ListItem,
     ListView,
     LoadingIndicator,
-    MarkdownViewer,
     Static,
 )
 
 from .config import load_bookmarks, save_config
 from .datamodels import Section, Story
-from .fetcher import Fetcher
+from .sources.cbc import CBCSource
 from .themes import THEMES
+
+# Markdown & scroll fallbacks for different Textual versions
+try:
+    from textual.widgets import MarkdownViewer as Markdown  # type: ignore
+except Exception:
+    try:
+        from textual.widgets import Markdown  # type: ignore
+    except Exception:
+        Markdown = Static  # type: ignore
+
+try:
+    from textual.containers import VerticalScroll  # some versions
+except Exception:
+    # fallback to Vertical for containing article content if VerticalScroll is missing
+    VerticalScroll = Vertical  # type: ignore
 
 
 # --- Story screen (separate) ---
@@ -38,10 +51,10 @@ class StoryViewScreen(Screen):
         Binding("r", "reload_story", "Reload"),
     ]
 
-    def __init__(self, story: Story, fetcher: Fetcher, section: Section):
+    def __init__(self, story: Story, source: CBCSource, section: Section):
         super().__init__()
         self.story = story
-        self.fetcher = fetcher
+        self.source = source
         self.section = section
 
     def compose(self) -> ComposeResult:
@@ -50,9 +63,7 @@ class StoryViewScreen(Screen):
         # loading indicator and scrollable Markdown
         loading = LoadingIndicator(id="story-loading")
         yield loading
-        yield VerticalScroll(
-            MarkdownViewer(id="story-markdown"), id="story-scroll"
-        )
+        yield VerticalScroll(Markdown("", id="story-markdown"), id="story-scroll")
 
     def on_mount(self) -> None:
         self.title = self.story.title
@@ -71,7 +82,7 @@ class StoryViewScreen(Screen):
             pass
         # fetch in worker thread
         self.run_worker(
-            lambda: self.fetcher.get_story_content(self.story, self.section),
+            lambda: self.source.get_story_content(self.story, self.section),
             name="story_loader",
             thread=True,
         )
@@ -95,34 +106,31 @@ class StoryViewScreen(Screen):
                 self.query_one("#story-scroll").display = True
             except Exception:
                 pass
-            md = self.query_one(MarkdownViewer)
-            try:
-                if isinstance(result, dict) and result.get("ok"):
-                    md.go(result.get("content", ""))
-                else:
-                    msg = (
-                        result.get("content", "Unable to load article.")
-                        if isinstance(result, dict)
-                        else "Unable to load article."
-                    )
-                    md.go(f"[b {error_color}]{msg}[/]")
-            except Exception as e:
-                md.go(f"[b {error_color}]Error displaying article: {e}[/]")
+            md = self.query_one("#story-markdown")
+            if isinstance(result, dict) and result.get("ok"):
+                md.update(result.get("content", ""))
+            else:
+                msg = (
+                    result.get("content", "Unable to load article.")
+                    if isinstance(result, dict)
+                    else "Unable to load article."
+                )
+                md.update(f"[b {error_color}]{msg}[/]")
         else:
             # worker not SUCCESS; if it's not running/pending treat as failure
             if event.state not in (WorkerState.PENDING, WorkerState.RUNNING):
                 try:
                     self.query_one("#story-loading", LoadingIndicator).display = False
                     self.query_one("#story-scroll").display = True
-                    md = self.query_one(MarkdownViewer)
-                    md.go(f"[b {error_color}]Unable to load article[/]")
+                    md = self.query_one("#story-markdown")
+                    md.update(f"[b {error_color}]Unable to load article[/]")
                 except Exception:
                     pass
 
     def action_open_in_browser(self) -> None:
         webbrowser.open(self.story.url)
 
-    def on_markdown_viewer_link_clicked(self, event: MarkdownViewer.LinkClicked) -> None:
+    def on_markdown_link_clicked(self, event: Markdown.LinkClicked) -> None:
         """Handle clicks on links in Markdown."""
         self.run_worker(lambda: webbrowser.open(event.href), thread=True)
 
@@ -184,7 +192,7 @@ class SettingsScreen(Screen):
 
     def load_sections(self) -> None:
         """Load sections in a worker."""
-        all_sections = self.app.fetcher.get_sections()
+        all_sections = self.app.source.get_sections()
         self.post_message(self.SectionsLoaded(all_sections))
 
     def on_settings_screen_sections_loaded(

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import base64
 import html
 import json
 import logging
@@ -13,7 +12,6 @@ from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from ..cache import Cache
 from ..config import (
     DOMAIN_BASE,
     HOME_PAGE_URL,
@@ -24,6 +22,8 @@ from ..config import (
     REQUEST_HEADERS,
     RETRY_ATTEMPTS,
     SECTIONS_PAGE_URL,
+    load_read_articles,
+    load_bookmarks,
 )
 from ..datamodels import Section, Story
 
@@ -31,10 +31,9 @@ logger = logging.getLogger("news")
 
 
 class CBCSource:
-    def __init__(self, config: Dict[str, Any], cache: Optional[Cache] = None):
+    def __init__(self, config: Dict[str, Any]):
         self.config = config
         self.session = self._create_session()
-        self.cache = cache
 
     def _create_session(self) -> requests.Session:
         s = requests.Session()
@@ -50,16 +49,6 @@ class CBCSource:
     def _retryable_fetch(
         self, url: str, timeout: int = HTTP_TIMEOUT, attempts: int = RETRY_ATTEMPTS
     ) -> Optional[bytes]:
-        """
-        Fetch a URL with retries and caching.
-        The cache stores the response content as a base64 encoded string.
-        """
-        if self.cache:
-            cached_content = self.cache.get(url)
-            if cached_content:
-                logger.debug("Cache hit for %s. Content length: %d", url, len(cached_content))
-                return base64.b64decode(cached_content)
-
         delay = INITIAL_RETRY_DELAY
         for attempt in range(1, attempts + 1):
             try:
@@ -67,13 +56,7 @@ class CBCSource:
                 resp = self.session.get(url, timeout=timeout)
                 resp.raise_for_status()
                 logger.debug("Fetched %s OK", url)
-                content = resp.content
-                logger.debug("Fetched raw content for %s. Length: %d", url, len(content))
-                if content and self.cache:
-                    encoded_content = base64.b64encode(content).decode("utf-8")
-                    self.cache.set(url, encoded_content)
-                    logger.debug("Cached content for %s. Encoded length: %d", url, len(encoded_content))
-                return content
+                return resp.content
             except requests.RequestException as e:
                 logger.debug("Fetch attempt %d failed for %s: %s", attempt, url, e)
                 if attempt == attempts:
@@ -141,14 +124,9 @@ class CBCSource:
             return []
 
     def get_story_content(self, story: Story, section: Section) -> Dict[str, Any]:
-        logger.debug("Getting story content for: %s", story.url)
         content_bytes = self._retryable_fetch(story.url)
         if not content_bytes:
-            logger.error("Failed to fetch article content for %s", story.url)
             return {"ok": False, "content": "Failed to fetch article."}
-
-        logger.debug("Article content fetched for %s. Length: %d", story.url, len(content_bytes))
-
         try:
             soup = BeautifulSoup(content_bytes, "lxml")
             json_script = soup.find("script", id="__NEXT_DATA__")
@@ -171,23 +149,19 @@ class CBCSource:
                         )
                     full = html.unescape("".join(parts)).strip()
                     if len(full.split()) > MIN_ARTICLE_WORDS:
-                        logger.debug("Successfully parsed story from JSON for %s. Content length: %d", story.url, len(full))
                         return {"ok": True, "content": full}
-                except Exception as e:
+                except Exception:
                     logger.debug(
-                        "JSON parse failed for %s: %s. Falling back to paragraphs.",
-                        story.url, e
+                        "JSON parse failed for %s; falling back to paragraphs",
+                        story.url,
                     )
             main = soup.find("main") or soup
             paras = [p.get_text(" ", strip=True) for p in main.find_all("p")]
             candidate = "\n\n".join([p for p in paras if p]).strip()
             if candidate and not _is_placeholder_text(candidate):
-                logger.debug("Successfully parsed story from paragraphs for %s. Content length: %d", story.url, len(candidate))
                 return {"ok": True, "content": candidate}
         except Exception as e:
             logger.error("Failed to parse story content from %s: %s", story.url, e)
-
-        logger.error("Could not extract valid article content for %s", story.url)
         return {"ok": False, "content": "Could not extract valid article content."}
 
 
