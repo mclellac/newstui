@@ -5,15 +5,27 @@ import webbrowser
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Vertical
+from textual.message import Message
 from textual.screen import Screen
 from textual.worker import Worker, WorkerState
-from textual.widgets import Footer, Header, LoadingIndicator, Static
+from textual.widgets import (
+    Button,
+    Checkbox,
+    DataTable,
+    Footer,
+    Header,
+    Input,
+    Label,
+    ListItem,
+    ListView,
+    LoadingIndicator,
+    Static,
+)
 
+from .config import load_bookmarks, save_config
 from .datamodels import Section, Story
 from .sources.cbc import CBCSource
-from .config import load_bookmarks
 from .themes import THEMES
-from textual.widgets import DataTable
 
 # Markdown & scroll fallbacks for different Textual versions
 try:
@@ -152,14 +164,127 @@ class HelpScreen(Screen):
         yield Header()
         yield Footer()
         yield Static("Keybindings", classes="pane-title")
-        yield Static(
-            "q: Quit\n"
-            "r: Refresh\n"
-            "b: Bookmark\n"
-            "B: Show Bookmarks\n"
-            "h: Help\n"
-            "o: Open in browser\n"
-            "left: Navigate Left\n"
-            "right: Navigate Right\n"
-            "ctrl+p: Command Palette"
-        )
+
+        bindings_text = ""
+        for b in self.app.BINDINGS:
+            bindings_text += f"{b.key}: {b.description}\n"
+
+        yield Static(bindings_text)
+
+
+class SettingsScreen(Screen):
+    """Screen for app settings."""
+
+    BINDINGS = [
+        Binding("escape,q", "app.pop_screen", "Back"),
+    ]
+
+    class SectionsLoaded(Message):
+        def __init__(self, sections: list[Section]):
+            self.sections = sections
+            super().__init__()
+
+    def compose(self) -> ComposeResult:
+        yield Header()
+        yield Footer()
+        with VerticalScroll(id="settings"):
+            yield Label("Sections")
+            yield ListView(id="sections-list")
+
+            yield Label("Meta Sections")
+            yield Input(placeholder="Meta section name", id="meta-section-name")
+            yield Label("Constituent Sections")
+            yield ListView(id="meta-sections-constituents")
+            yield Button("Create Meta Section", id="create-meta-section")
+
+            yield Button("Save", id="save-settings")
+
+    def on_mount(self) -> None:
+        """Load sections and populate lists."""
+        self.title = "Settings"
+        self.run_worker(self.load_sections, name="load_settings_sections")
+
+    def load_sections(self) -> None:
+        # This will run in a worker thread
+        all_sections = self.app.source.get_sections()
+        self.post_message(self.SectionsLoaded(all_sections))
+
+    async def on_settings_screen_sections_loaded(
+        self, message: SettingsScreen.SectionsLoaded
+    ) -> None:
+        sections_list = self.query_one("#sections-list", ListView)
+        meta_constituents_list = self.query_one("#meta-sections-constituents", ListView)
+
+        enabled_sections = self.app.config.get("sections", [])
+        if not enabled_sections:  # if not configured, enable all by default
+            enabled_sections = [s.title for s in message.sections]
+
+        for section in message.sections:
+            is_enabled = section.title in enabled_sections
+            cb = Checkbox(section.title, is_enabled)
+            # monkey patch the section object to the checkbox
+            # this is not ideal, but it's a quick way to get it working
+            # A better way would be to create a custom widget that holds the section
+            setattr(cb, "section", section)
+            item = ListItem(cb)
+            sections_list.append(item)
+
+            # also populate the list for meta sections
+            cb_meta = Checkbox(section.title, False)
+            setattr(cb_meta, "section", section)
+            item_meta = ListItem(cb_meta)
+            meta_constituents_list.append(item_meta)
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "save-settings":
+            self.save_settings()
+        elif event.button.id == "create-meta-section":
+            self.create_meta_section()
+
+    def save_settings(self) -> None:
+        # Get selected sections
+        sections_list = self.query_one("#sections-list", ListView)
+        enabled_sections = []
+        for item in sections_list.children:
+            checkbox = item.query_one(Checkbox)
+            if checkbox.value:
+                enabled_sections.append(getattr(checkbox, "section").title)
+
+        # Update config
+        config = self.app.config
+        config["sections"] = enabled_sections
+
+        save_config(config)
+        self.app.notify("Settings saved!")
+        self.app.pop_screen()
+        # The app should reload sections based on the new config.
+
+    def create_meta_section(self) -> None:
+        meta_section_name_input = self.query_one("#meta-section-name")
+        meta_section_name = meta_section_name_input.value.strip()
+        if not meta_section_name:
+            self.app.notify("Meta section name cannot be empty.", severity="error")
+            return
+
+        constituents_list = self.query_one("#meta-sections-constituents", ListView)
+        selected_sections = []
+        for item in constituents_list.children:
+            checkbox = item.query_one(Checkbox)
+            if checkbox.value:
+                selected_sections.append(getattr(checkbox, "section").title)
+
+        if not selected_sections:
+            self.app.notify(
+                "Select at least one section for the meta section.", severity="error"
+            )
+            return
+
+        config = self.app.config
+        if "meta_sections" not in config:
+            config["meta_sections"] = {}
+        config["meta_sections"][meta_section_name] = selected_sections
+        save_config(config)
+        self.app.notify(f"Meta section '{meta_section_name}' created.")
+        meta_section_name_input.value = ""
+        for item in constituents_list.children:
+            item.query_one(Checkbox).value = False
