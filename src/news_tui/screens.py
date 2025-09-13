@@ -96,14 +96,14 @@ class StoryViewScreen(Screen):
                 pass
             md = self.query_one(MarkdownViewer)
             if isinstance(result, dict) and result.get("ok"):
-                md.document = result.get("content", "")
+                md.go(result.get("content", ""))
             else:
                 msg = (
                     result.get("content", "Unable to load article.")
                     if isinstance(result, dict)
                     else "Unable to load article."
                 )
-                md.document = f"[b {error_color}]{msg}[/]"
+                md.go(f"[b {error_color}]{msg}[/]")
         else:
             # worker not SUCCESS; if it's not running/pending treat as failure
             if event.state not in (WorkerState.PENDING, WorkerState.RUNNING):
@@ -111,7 +111,7 @@ class StoryViewScreen(Screen):
                     self.query_one("#story-loading", LoadingIndicator).display = False
                     self.query_one("#story-scroll").display = True
                     md = self.query_one(MarkdownViewer)
-                    md.document = f"[b {error_color}]Unable to load article[/]"
+                    md.go(f"[b {error_color}]Unable to load article[/]")
                 except Exception:
                     pass
 
