@@ -46,9 +46,8 @@ def enable_debug_log_to_tmp() -> str:
     fh.setLevel(logging.DEBUG)
     fmt = logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
     fh.setFormatter(fmt)
-    logger.addHandler(fh)
+    # Only add the handler to the root logger to avoid duplicate messages.
     logging.getLogger().addHandler(fh)
-    logger.setLevel(logging.DEBUG)
     logging.getLogger().setLevel(logging.DEBUG)
     logger.debug("Debug logging enabled to %s", debug_path)
     return debug_path
