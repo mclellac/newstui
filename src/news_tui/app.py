@@ -341,8 +341,10 @@ class NewsApp(App):
 
     def action_switch_theme(self, theme: str) -> None:
         self.theme = theme
-        self.config["theme"] = theme
-        save_config(self.config)
+        config = load_config()
+        config["theme"] = theme
+        save_config(config)
+        self.config = config
 
     def action_toggle_left_pane(self) -> None:
         """Toggle the left pane."""
