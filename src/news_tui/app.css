@@ -62,9 +62,13 @@ ListView > ListItem.--highlighted {
   padding: 1 0;
 }
 
-.read .headline-section,
+.read .headline-section {
+    color: $text-muted;
+}
+
 .read .headline-title {
     color: $text-muted;
+    text-style: italic;
 }
 
 .read .headline-flag {
@@ -100,6 +104,12 @@ LoadingIndicator {
 
 Markdown {
     background: $surface;
+}
+
+Markdown h1,
+Markdown h2,
+Markdown h3 {
+    text-style: bold;
 }
 
 StatusBar {

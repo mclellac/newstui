@@ -23,6 +23,7 @@ Footer {
 ListView > ListItem.--highlighted {
     background: $primary;
     color: $background;
+    text-style: bold;
 }
 
 ListItem:hover {
@@ -39,4 +40,8 @@ HeadlineItem > Horizontal > .headline-flag {
 
 HeadlineItem > Horizontal > .headline-title {
     color: $text;
+}
+
+Markdown h1 {
+    color: $primary;
 }
