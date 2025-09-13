@@ -9,7 +9,6 @@ from textual.containers import Horizontal, Vertical
 from textual.worker import Worker, WorkerState
 from rich.text import Text
 from textual.widgets import (
-    DataTable,
     Header,
     Input,
     ListView,
@@ -31,7 +30,7 @@ from .datamodels import Section, Story
 from .sources.cbc import CBCSource
 from .screens import BookmarksScreen, SettingsScreen, StoryViewScreen
 from .themes import THEMES
-from .widgets import SectionListItem, StatusBar
+from .widgets import HeadlineItem, SectionListItem, StatusBar
 
 
 class ThemeProvider(Provider):
@@ -62,7 +61,7 @@ class NewsApp(App):
         Binding("r", "refresh", "Refresh"),
         Binding("b", "bookmark", "Bookmark"),
         Binding("B", "show_bookmarks", "Show Bookmarks"),
-        Binding("h", "app.toggle_class('TextualHelp')", "Toggle Help"),
+        Binding("h", "toggle_help", "Toggle Help"),
         Binding("s", "show_settings", "Settings"),
         Binding("left", "nav_left", "Navigate Left"),
         Binding("right", "nav_right", "Navigate Right"),
@@ -98,10 +97,7 @@ class NewsApp(App):
             with Vertical(id="right"):
                 yield Static("Headlines", classes="pane-title")
                 yield Input(placeholder="Filter headlines...")
-                yield DataTable(id="headlines-table")
-                yield Rule()
-                yield Static("Summary", classes="pane-title")
-                yield Static(id="summary-text", classes="summary-text")
+                yield ListView(id="headlines-list")
         yield StatusBar()
 
     def on_mount(self) -> None:
@@ -116,13 +112,8 @@ class NewsApp(App):
         except Exception:
             pass
 
-        # Configure the headlines table
-        table = self.query_one(DataTable)
-        table.cursor_type = "row"
-        table.add_column("Section", width=15)
-        table.add_column("Flag", width=10)
-        table.add_column("Title")
-        table.add_column("story", width=0)
+        # Configure the headlines list
+        self.query_one("#headlines-list", ListView).cursor_type = "row"
 
         # Register all themes
         for name, theme in THEMES.items():
@@ -174,48 +165,39 @@ class NewsApp(App):
             self._load_headlines_for_section(self.current_section)
         else:
             # No sections, clear headlines
-            self.query_one(DataTable).clear()
-            self.query_one("#summary-text", Static).update("No sections selected.")
+            self.query_one("#headlines-list", ListView).clear()
 
     def _handle_headlines_error(self, event: Worker.StateChanged) -> None:
         self.query_one(StatusBar).loading_status = "Error loading headlines."
-        table = self.query_one(DataTable)
+        headlines_list = self.query_one("#headlines-list", ListView)
         try:
-            table.query_one(LoadingIndicator).remove()
+            headlines_list.query_one(LoadingIndicator).remove()
         except Exception:
             pass
-        table.visible = False
+        headlines_list.display = False
 
-    def _update_headlines_table(self, stories: List[Story]) -> None:
-        table = self.query_one(DataTable)
-        table.clear()
+    def _update_headlines_list(self, stories: List[Story]) -> None:
+        headlines_list = self.query_one("#headlines-list", ListView)
+        headlines_list.clear()
         if not stories:
-            table.visible = False
+            headlines_list.display = False
             return
         for s in stories:
-            flag = s.flag or ""
-            if s.bookmarked:
-                flag = f"B {flag}".strip()
-
-            style = "dim" if s.read else ""
-            table.add_row(
-                Text(s.section, style=style),
-                Text(flag, style=style),
-                Text(s.title, style=style),
-                s,
-                key=s.url,
-            )
-        table.visible = True
+            item = HeadlineItem(s)
+            if s.read:
+                item.add_class("read")
+            headlines_list.append(item)
+        headlines_list.display = True
 
     def _handle_headlines_loaded(self, event: Worker.StateChanged) -> None:
         self.query_one(StatusBar).loading_status = ""
-        table = self.query_one(DataTable)
+        headlines_list = self.query_one("#headlines-list", ListView)
         try:
-            table.query_one(LoadingIndicator).remove()
+            headlines_list.query_one(LoadingIndicator).remove()
         except Exception:
             pass
         self.stories = getattr(event.worker, "result", None) or []
-        self._update_headlines_table(self.stories)
+        self._update_headlines_list(self.stories)
 
     def _load_headlines_for_section(self, section: Section) -> None:
         if not section:
@@ -227,9 +209,9 @@ class NewsApp(App):
 
         self.query_one(StatusBar).loading_status = f"Loading {section.title}..."
         self.query_one(Input).value = ""
-        table = self.query_one(DataTable)
-        table.clear()
-        table.mount(LoadingIndicator())
+        headlines_list = self.query_one("#headlines-list", ListView)
+        headlines_list.clear()
+        headlines_list.mount(LoadingIndicator())
         self.run_worker(
             lambda: self.source.get_stories(
                 section, self.read_articles, self.bookmarks
@@ -246,9 +228,9 @@ class NewsApp(App):
 
         self.query_one(StatusBar).loading_status = f"Loading {section.title}..."
         self.query_one(Input).value = ""
-        table = self.query_one(DataTable)
-        table.clear()
-        table.mount(LoadingIndicator())
+        headlines_list = self.query_one("#headlines-list", ListView)
+        headlines_list.clear()
+        headlines_list.mount(LoadingIndicator())
 
         def _get_stories():
             all_stories = []
@@ -278,30 +260,16 @@ class NewsApp(App):
             if isinstance(event.item, SectionListItem):
                 self.current_section = event.item.section
                 self._load_headlines_for_section(self.current_section)
+        elif event.list_view.id == "headlines-list":
+            if isinstance(event.item, HeadlineItem):
+                self._open_story(event.item.story)
 
     def _open_story(self, story: Story) -> None:
         story.read = True
         self.read_articles.add(story.url)
         save_read_articles(self.read_articles)
-        self._update_headlines_table(self.stories)
+        self._update_headlines_list(self.stories)
         self.push_screen(StoryViewScreen(story, self.source, self.current_section))
-
-    def on_data_table_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
-        summary_text = self.query_one("#summary-text", Static)
-        story = event.control.get_row(event.row_key)[-1]
-        if story and story.summary:
-            summary_text.update(story.summary)
-        else:
-            summary_text.update(
-                "No summary available for this story. "
-                "Press Enter to read the full article."
-            )
-
-    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
-        # Headline selected -> open StoryViewScreen.
-        story = event.control.get_row(event.row_key)[-1]
-        if story:
-            self._open_story(story)
 
     def action_refresh(self) -> None:
         if self.current_section:
@@ -309,51 +277,54 @@ class NewsApp(App):
 
     def action_nav_left(self) -> None:
         try:
-            if self.query_one("#headlines-table").has_focus:
+            if self.query_one("#headlines-list").has_focus:
                 self.query_one("#sections-list").focus()
         except Exception:
             pass
 
     def action_nav_right(self) -> None:
-        table = self.query_one("#headlines-table")
-        if table.has_focus:
-            row_index = table.cursor_row
-            story = table.get_row_at(row_index)[-1]
-            if story:
-                self._open_story(story)
+        headlines_list = self.query_one("#headlines-list", ListView)
+        if headlines_list.has_focus:
+            item = headlines_list.highlighted_child
+            if isinstance(item, HeadlineItem):
+                self._open_story(item.story)
         else:
             try:
                 if self.query_one("#sections-list").has_focus:
-                    table.focus()
+                    headlines_list.focus()
             except Exception:
                 pass
 
     def on_input_changed(self, event: Input.Changed) -> None:
         query = event.value.strip().lower()
         if not query:
-            self._update_headlines_table(self.stories)
+            self._update_headlines_list(self.stories)
             return
         filtered_stories = [
-            s for s in self.stories if query in s.title.lower()
+            s
+            for s in self.stories
+            if query in s.title.lower()
+            or query in s.section.lower()
+            or (s.flag and query in s.flag.lower())
         ]
-        self._update_headlines_table(filtered_stories)
+        self._update_headlines_list(filtered_stories)
 
     def action_bookmark(self) -> None:
-        table = self.query_one(DataTable)
-        if not table.has_focus:
+        headlines_list = self.query_one("#headlines-list", ListView)
+        if not headlines_list.has_focus:
             return
-        row_index = table.cursor_row
-        story = table.get_row_at(row_index)[-1]
-        if not story:
+        item = headlines_list.highlighted_child
+        if not isinstance(item, HeadlineItem):
             return
 
+        story = item.story
         story.bookmarked = not story.bookmarked
         if story.bookmarked:
             self.bookmarks.append(asdict(story))
         else:
             self.bookmarks = [b for b in self.bookmarks if b["url"] != story.url]
         save_bookmarks(self.bookmarks)
-        self._update_headlines_table(self.stories)
+        self._update_headlines_list(self.stories)
 
     def action_show_bookmarks(self) -> None:
         self.push_screen(BookmarksScreen())
@@ -376,3 +347,27 @@ class NewsApp(App):
         """Toggle the left pane."""
         left_pane = self.query_one("#left")
         left_pane.display = not left_pane.display
+
+    def action_toggle_help(self) -> None:
+        """Toggle the help screen."""
+        from textual.screen import ModalScreen
+        from textual.widgets import Label
+
+        class HelpScreen(ModalScreen):
+            def compose(self) -> ComposeResult:
+                yield Vertical(
+                    Label("Help"),
+                    Label("q: Quit"),
+                    Label("r: Refresh"),
+                    Label("b: Bookmark"),
+                    Label("B: Show Bookmarks"),
+                    Label("h: Toggle Help"),
+                    Label("s: Settings"),
+                    Label("left: Navigate Left"),
+                    Label("right: Navigate Right"),
+                    Label("ctrl+p: Command Palette"),
+                    Label("ctrl+l: Toggle Sections"),
+                    id="help-dialog",
+                )
+
+        self.push_screen(HelpScreen())

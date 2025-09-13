@@ -130,3 +130,31 @@ StatusBar {
     width: 100%;
     margin: 1 0;
 }
+
+#help-dialog {
+    padding: 2 4;
+    background: $surface;
+    border: thick $primary;
+    width: auto;
+    height: auto;
+}
+
+HeadlineItem {
+    layout: horizontal;
+    width: 100%;
+    height: auto;
+}
+
+.headline-section {
+    width: 15;
+    text-align: left;
+}
+
+.headline-flag {
+    width: 10;
+    text-align: left;
+}
+
+.headline-title {
+    width: 1fr;
+}
