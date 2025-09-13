@@ -20,3 +20,15 @@ ListView > ListItem.--highlighted {
 ListItem:hover {
     background: #4c566a;
 }
+
+HeadlineItem > Horizontal > .headline-section {
+    color: #d8dee9;
+}
+
+HeadlineItem > Horizontal > .headline-flag {
+    color: #88c0d0;
+}
+
+HeadlineItem > Horizontal > .headline-title {
+    color: #d8dee9;
+}

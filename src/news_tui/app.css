@@ -131,18 +131,9 @@ StatusBar {
     margin: 1 0;
 }
 
-#help-dialog {
-    padding: 2 4;
-    background: $surface;
-    border: thick $primary;
-    width: auto;
-    height: auto;
-}
-
 HeadlineItem {
-    layout: horizontal;
-    width: 100%;
     height: auto;
+    padding: 0 1;
 }
 
 .headline-section {
