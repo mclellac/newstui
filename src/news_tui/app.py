@@ -49,13 +49,26 @@ class ThemeProvider(Provider):
                 )
 
 
+class CacheProvider(Provider):
+    async def search(self, query: str) -> Hits:
+        """Search for cache commands."""
+        matcher = self.matcher(query)
+        score = matcher.match("clear cache")
+        if score > 0:
+            yield Hit(
+                score,
+                matcher.highlight("Clear cache"),
+                self.app.action_clear_cache,
+            )
+
+
 class NewsApp(App):
     TITLE = "News "
     SUB_TITLE = "News client for abnormies"
 
     CSS_PATH = "app.css"
 
-    COMMANDS = App.COMMANDS | {ThemeProvider}
+    COMMANDS = App.COMMANDS | {ThemeProvider, CacheProvider}
 
     BINDINGS = [
         Binding("q", "quit", "Quit"),
@@ -322,6 +335,7 @@ class NewsApp(App):
         """Called when settings screen is closed."""
         # reload config and sections
         self.config = load_config()
+        self.fetcher = Fetcher(self.config)
         self.meta_sections = self.config.get("meta_sections", {})
         self.run_worker(self.fetcher.get_sections, name="sections_loader", thread=True)
 
@@ -334,3 +348,8 @@ class NewsApp(App):
         """Toggle the left pane."""
         left_pane = self.query_one("#left")
         left_pane.display = not left_pane.display
+
+    def action_clear_cache(self) -> None:
+        """Clear the cache."""
+        self.fetcher.cache.clear()
+        self.notify("Cache cleared.")
