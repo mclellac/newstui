@@ -4,11 +4,17 @@ from datetime import datetime
 
 from textual.app import ComposeResult
 from textual.containers import Horizontal
-from textual.widgets import ListItem, Static
+from textual.widgets import Checkbox, ListItem, Static
 from textual.reactive import reactive
 
 from .datamodels import Section, Story
-from .themes import THEMES
+from .theme_definitions import THEMES
+
+
+class SectionCheckbox(Checkbox):
+    def __init__(self, label: str, value: bool, section: Section):
+        super().__init__(label, value)
+        self.section = section
 
 
 # --- UI Widgets ---
