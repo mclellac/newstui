@@ -26,7 +26,7 @@ from textual.widgets import (
 )
 
 import os
-from .config import CONFIG_PATH, load_bookmarks, save_config
+from .config import CONFIG_PATH, load_bookmarks, save_config, logger
 from .datamodels import Section, Story
 from .sources.cbc import CBCSource
 from .themes import THEMES
@@ -80,6 +80,7 @@ class StoryViewScreen(Screen):
             self.query_one("#story-loading", LoadingIndicator).display = False
         except Exception:
             pass
+        self.query_one("#story-scroll").focus()
         self.load_story()
 
     def load_story(self) -> None:
@@ -211,18 +212,6 @@ class SettingsScreen(Screen):
                 )
         yield Button("Save", id="save-settings")
 
-    def get_available_themes(self) -> list[str]:
-        """Get a list of available themes."""
-        themes_dir = os.path.join(os.path.dirname(CONFIG_PATH), "themes")
-        if not os.path.isdir(themes_dir):
-            return []
-        themes = [
-            f.replace(".css", "")
-            for f in os.listdir(themes_dir)
-            if f.endswith(".css")
-        ]
-        return themes
-
     def on_mount(self) -> None:
         """Load sections and populate lists."""
         self.title = "Settings"
@@ -230,7 +219,7 @@ class SettingsScreen(Screen):
 
         # Set theme selector
         theme_select = self.query_one("#theme-select", Select)
-        themes = self.get_available_themes()
+        themes = list(self.app.themes.keys())
         theme_select.set_options([(theme, theme) for theme in themes])
         if self.app.theme in themes:
             theme_select.value = self.app.theme
@@ -341,6 +330,7 @@ class SettingsScreen(Screen):
             )
             return
 
+        logger.info(f"Creating meta section '{meta_section_name}' with sections: {selected_sections}")
         config = self.app.config
         if "meta_sections" not in config:
             config["meta_sections"] = {}
