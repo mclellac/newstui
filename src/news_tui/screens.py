@@ -18,6 +18,7 @@ from textual.widgets import (
     ListItem,
     ListView,
     LoadingIndicator,
+    Markdown,
     Select,
     Static,
     TabbedContent,
@@ -25,13 +26,20 @@ from textual.widgets import (
 )
 
 import os
-from .config import CONFIG_PATH, load_bookmarks, save_config, logger, load_themes
+from .config import (
+    CONFIG_PATH,
+    load_bookmarks,
+    save_bookmarks,
+    save_config,
+    logger,
+    load_themes,
+)
 from .datamodels import Section, Story
 from .sources.cbc import CBCSource
 from .widgets import SectionCheckbox
 
 # Markdown & scroll fallbacks for different Textual versions
-MarkdownWidget = Static
+MarkdownWidget = Markdown
 
 try:
     from textual.containers import VerticalScroll  # some versions
@@ -149,20 +157,42 @@ class StoryViewScreen(Screen):
 class BookmarksScreen(Screen):
     BINDINGS = [
         Binding("escape,q,b,left", "app.pop_screen", "Back"),
+        Binding("d", "delete_bookmark", "Delete"),
     ]
 
     def compose(self) -> ComposeResult:
         yield Header()
         yield Footer()
-        yield DataTable()
+        yield DataTable(id="bookmarks-table")
 
     def on_mount(self) -> None:
         self.title = "Bookmarks"
+        self.bookmarks = load_bookmarks()
         table = self.query_one(DataTable)
-        table.add_column("Title", width=50)
-        bookmarks = load_bookmarks()
-        for b in bookmarks:
-            table.add_row(b["title"])
+        table.cursor_type = "row"
+        table.add_column("Title", key="title")
+        for bookmark in self.bookmarks:
+            table.add_row(bookmark["title"], key=bookmark["url"])
+
+    def action_delete_bookmark(self) -> None:
+        """Delete the selected bookmark."""
+        table = self.query_one(DataTable)
+        if not table.is_valid_row_index(table.cursor_row):
+            return
+
+        row_key = table.get_row_key(table.cursor_row)
+        url_to_delete = str(row_key.value)
+
+        # Remove the bookmark from the list
+        self.bookmarks = [b for b in self.bookmarks if b["url"] != url_to_delete]
+
+        # Save the updated bookmarks list
+        save_bookmarks(self.bookmarks)
+
+        # Remove the row from the table
+        table.remove_row_at(table.cursor_row)
+
+        self.app.notify("Bookmark deleted.")
 
 
 class SettingsScreen(Screen):

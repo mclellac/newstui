@@ -189,16 +189,23 @@ class NewsApp(App):
         headlines_list.display = False
 
     def _update_headlines_list(self, stories: List[Story]) -> None:
+        """Sorts stories by read status and updates the headlines list."""
+        # Sort stories by read status (unread first)
+        sorted_stories = sorted(stories, key=lambda s: s.read)
+
         headlines_list = self.query_one("#headlines-list", ListView)
         headlines_list.clear()
-        if not stories:
+
+        if not sorted_stories:
             headlines_list.display = False
             return
-        for s in stories:
+
+        for s in sorted_stories:
             item = HeadlineItem(s)
             if s.read:
                 item.add_class("read")
             headlines_list.append(item)
+
         headlines_list.display = True
 
     def _handle_headlines_loaded(self, event: Worker.StateChanged) -> None:
