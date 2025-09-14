@@ -8,6 +8,7 @@ from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.message import Message
 from textual.screen import Screen
 from textual.worker import Worker, WorkerState
+from .messages import StatusUpdate
 from textual.widgets import (
     Button,
     DataTable,
@@ -84,6 +85,7 @@ class StoryViewScreen(Screen):
             pass
         self.query_one("#story-scroll").focus()
         self.load_story()
+        self.post_message(StatusUpdate("[b cyan]j/k, up/down[/] to scroll, [b cyan]o[/] to open"))
 
     def load_story(self) -> None:
         try:
@@ -156,10 +158,10 @@ class StoryViewScreen(Screen):
         md_viewer.show_table_of_contents = not md_viewer.show_table_of_contents
 
     def action_scroll_down(self) -> None:
-        self.query_one("#story-scroll").scroll_down()
+        self.query_one("#story-scroll").scroll_y += 1
 
     def action_scroll_up(self) -> None:
-        self.query_one("#story-scroll").scroll_up()
+        self.query_one("#story-scroll").scroll_y -= 1
 
 
 class BookmarksScreen(Screen):

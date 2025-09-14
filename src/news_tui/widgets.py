@@ -7,6 +7,7 @@ from textual.containers import Horizontal
 from textual.widgets import Checkbox, ListItem, Static
 from textual.reactive import reactive
 
+from .messages import StatusUpdate
 from .datamodels import Section, Story
 
 
@@ -41,6 +42,7 @@ class HeadlineItem(ListItem):
 class StatusBar(Static):
     theme_name = reactive("default")
     loading_status = reactive("")
+    keybinding_hint = reactive("")
 
     def on_mount(self) -> None:
         self.set_interval(1, self.update_time)
@@ -50,14 +52,18 @@ class StatusBar(Static):
     def _on_app_theme_changed(self, theme: str) -> None:
         self.theme_name = theme
 
+    def on_status_update(self, message: StatusUpdate) -> None:
+        """Listen for status updates and update the hint."""
+        self.keybinding_hint = message.text
+
     def update_time(self) -> None:
         time_str = datetime.now().strftime("%H:%M:%S")
         status_items = [f"Theme: {self.theme_name}", time_str]
         if self.loading_status:
             status_items.append(self.loading_status)
 
-        key_color = "cyan"
-        status_items.append(f"[b {key_color}]ctrl+l[/] to toggle sections")
+        if self.keybinding_hint:
+            status_items.append(self.keybinding_hint)
 
         self.update(" | ".join(status_items))
 
@@ -65,4 +71,7 @@ class StatusBar(Static):
         self.update_time()
 
     def watch_loading_status(self, loading_status: str) -> None:
+        self.update_time()
+
+    def watch_keybinding_hint(self, keybinding_hint: str) -> None:
         self.update_time()
