@@ -19,22 +19,28 @@ from textual.widgets import (
     ListItem,
     ListView,
     LoadingIndicator,
+    Select,
     Static,
+    TabbedContent,
+    TabPane,
 )
 
-from .config import load_bookmarks, save_config
+import os
+from .config import CONFIG_PATH, load_bookmarks, save_config
 from .datamodels import Section, Story
 from .sources.cbc import CBCSource
 from .themes import THEMES
+from .widgets import SectionCheckbox
 
 # Markdown & scroll fallbacks for different Textual versions
 try:
-    from textual.widgets import MarkdownViewer as Markdown  # type: ignore
-except Exception:
+    from textual.widgets import MarkdownViewer
+    MarkdownWidget = MarkdownViewer
+except ImportError:
     try:
-        from textual.widgets import Markdown  # type: ignore
-    except Exception:
-        Markdown = Static  # type: ignore
+        from textual.widgets import Markdown as MarkdownWidget
+    except ImportError:
+        MarkdownWidget = Static
 
 try:
     from textual.containers import VerticalScroll  # some versions
@@ -49,6 +55,8 @@ class StoryViewScreen(Screen):
         Binding("escape,q,b,left", "app.pop_screen", "Back"),
         Binding("o", "open_in_browser", "Open in browser"),
         Binding("r", "reload_story", "Reload"),
+        Binding("j,down", "scroll_down", "Scroll Down"),
+        Binding("k,up", "scroll_up", "Scroll Up"),
     ]
 
     def __init__(self, story: Story, source: CBCSource, section: Section):
@@ -63,7 +71,7 @@ class StoryViewScreen(Screen):
         # loading indicator and scrollable Markdown
         loading = LoadingIndicator(id="story-loading")
         yield loading
-        yield VerticalScroll(Markdown("", id="story-markdown"), id="story-scroll")
+        yield VerticalScroll(MarkdownWidget("", id="story-markdown"), id="story-scroll")
 
     def on_mount(self) -> None:
         self.title = self.story.title
@@ -108,14 +116,18 @@ class StoryViewScreen(Screen):
                 pass
             md = self.query_one("#story-markdown")
             if isinstance(result, dict) and result.get("ok"):
-                md.update(result.get("content", ""))
+                content = result.get("content", "")
+                md.document.update(content)
+                word_count = len(content.split())
+                time_to_read = max(1, round(word_count / 200))
+                self.sub_title = f"~{time_to_read} min read"
             else:
                 msg = (
                     result.get("content", "Unable to load article.")
                     if isinstance(result, dict)
                     else "Unable to load article."
                 )
-                md.update(f"[b {error_color}]{msg}[/]")
+                md.document.update(f"[b {error_color}]{msg}[/]")
         else:
             # worker not SUCCESS; if it's not running/pending treat as failure
             if event.state not in (WorkerState.PENDING, WorkerState.RUNNING):
@@ -123,19 +135,25 @@ class StoryViewScreen(Screen):
                     self.query_one("#story-loading", LoadingIndicator).display = False
                     self.query_one("#story-scroll").display = True
                     md = self.query_one("#story-markdown")
-                    md.update(f"[b {error_color}]Unable to load article[/]")
+                    md.document.update(f"[b {error_color}]Unable to load article[/]")
                 except Exception:
                     pass
 
     def action_open_in_browser(self) -> None:
         webbrowser.open(self.story.url)
 
-    def on_markdown_link_clicked(self, event: Markdown.LinkClicked) -> None:
+    def on_markdown_link_clicked(self, event: MarkdownWidget.LinkClicked) -> None:
         """Handle clicks on links in Markdown."""
         self.run_worker(lambda: webbrowser.open(event.href), thread=True)
 
     def action_reload_story(self) -> None:
         self.load_story()
+
+    def action_scroll_down(self) -> None:
+        self.query_one("#story-scroll").scroll_down()
+
+    def action_scroll_up(self) -> None:
+        self.query_one("#story-scroll").scroll_up()
 
 
 class BookmarksScreen(Screen):
@@ -173,22 +191,52 @@ class SettingsScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Header()
         yield Footer()
-        with Horizontal(id="settings-container"):
-            with Vertical(id="settings-left"):
-                yield Label("Sections")
+        with TabbedContent(id="settings-tabs"):
+            with TabPane("Sections", id="sections-tab"):
                 yield ListView(id="sections-list")
-            with Vertical(id="settings-right"):
-                yield Label("Meta Sections")
-                yield Input(placeholder="Meta section name", id="meta-section-name")
-                yield Label("Constituent Sections")
-                yield ListView(id="meta-sections-constituents")
-                yield Button("Create Meta Section", id="create-meta-section")
+            with TabPane("Meta Sections", id="meta-sections-tab"):
+                with Vertical():
+                    yield Label("Meta Section Name")
+                    yield Input(placeholder="e.g. My Awesome Feed", id="meta-section-name")
+                    yield Label("Constituent Sections")
+                    yield ListView(id="meta-sections-constituents")
+                    yield Button("Create Meta Section", id="create-meta-section")
+            with TabPane("Theme", id="theme-tab"):
+                yield Select([], id="theme-select", prompt="Select a theme")
         yield Button("Save", id="save-settings")
+
+    def get_available_themes(self) -> list[str]:
+        """Get a list of available themes."""
+        themes_dir = os.path.join(os.path.dirname(CONFIG_PATH), "themes")
+        if not os.path.isdir(themes_dir):
+            return []
+        themes = [
+            f.replace(".css", "")
+            for f in os.listdir(themes_dir)
+            if f.endswith(".css")
+        ]
+        return themes
 
     def on_mount(self) -> None:
         """Load sections and populate lists."""
         self.title = "Settings"
         self.run_worker(self.load_sections, name="load_settings_sections", thread=True)
+        theme_select = self.query_one("#theme-select", Select)
+        themes = self.get_available_themes()
+        theme_select.set_options([(theme, theme) for theme in themes])
+        theme_select.value = self.app.theme
+
+    def on_input_changed(self, event: Input.Changed) -> None:
+        if event.input.id == "meta-section-name":
+            constituents_list = self.query_one("#meta-sections-constituents", ListView)
+            if event.value:
+                constituents_list.add_class("highlight-list")
+            else:
+                constituents_list.remove_class("highlight-list")
+
+    def on_select_changed(self, event: Select.Changed) -> None:
+        if event.select.id == "theme-select":
+            self.app.theme = event.value
 
     def load_sections(self) -> None:
         """Load sections in a worker."""
@@ -207,17 +255,12 @@ class SettingsScreen(Screen):
 
         for section in message.sections:
             is_enabled = section.title in enabled_sections
-            cb = Checkbox(section.title, is_enabled)
-            # monkey patch the section object to the checkbox
-            # this is not ideal, but it's a quick way to get it working
-            # A better way would be to create a custom widget that holds the section
-            setattr(cb, "section", section)
+            cb = SectionCheckbox(section.title, is_enabled, section=section)
             item = ListItem(cb)
             sections_list.append(item)
 
             # also populate the list for meta sections
-            cb_meta = Checkbox(section.title, False)
-            setattr(cb_meta, "section", section)
+            cb_meta = SectionCheckbox(section.title, False, section=section)
             item_meta = ListItem(cb_meta)
             meta_constituents_list.append(item_meta)
 
@@ -232,16 +275,27 @@ class SettingsScreen(Screen):
         sections_list = self.query_one("#sections-list", ListView)
         enabled_sections = []
         for item in sections_list.children:
-            checkbox = item.query_one(Checkbox)
+            checkbox = item.query_one(SectionCheckbox)
             if checkbox.value:
-                enabled_sections.append(getattr(checkbox, "section").title)
+                enabled_sections.append(checkbox.section.title)
+
+        # Get selected theme
+        theme_select = self.query_one("#theme-select", Select)
+        selected_theme = theme_select.value
 
         # Update config
         config = self.app.config
         config["sections"] = enabled_sections
+        config["theme"] = selected_theme
 
         save_config(config)
         self.app.notify("Settings saved!")
+
+        # Visual feedback for save
+        save_button = self.query_one("#save-settings", Button)
+        save_button.add_class("saved")
+        self.app.set_timer(2, lambda: save_button.remove_class("saved"))
+
         self.app.pop_screen()
         # The app should reload sections based on the new config.
 
@@ -255,9 +309,9 @@ class SettingsScreen(Screen):
         constituents_list = self.query_one("#meta-sections-constituents", ListView)
         selected_sections = []
         for item in constituents_list.children:
-            checkbox = item.query_one(Checkbox)
+            checkbox = item.query_one(SectionCheckbox)
             if checkbox.value:
-                selected_sections.append(getattr(checkbox, "section").title)
+                selected_sections.append(checkbox.section.title)
 
         if not selected_sections:
             self.app.notify(
@@ -272,5 +326,5 @@ class SettingsScreen(Screen):
         save_config(config)
         self.app.notify(f"Meta section '{meta_section_name}' created.")
         meta_section_name_input.value = ""
-        for item in constituents_list.children:
-            item.query_one(Checkbox).value = False
+        for checkbox in constituents_list.query(SectionCheckbox):
+            checkbox.value = False
