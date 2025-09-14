@@ -297,6 +297,8 @@ class SettingsScreen(Screen):
         # Get selected theme
         theme_select = self.query_one("#theme-select", Select)
         selected_theme = theme_select.value
+        if selected_theme is Select.BLANK:
+            selected_theme = None
 
         # Get selected layout
         layout_select = self.query_one("#layout-select", Select)
