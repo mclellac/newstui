@@ -1,8 +1,11 @@
-
+/* Rosé Pine Theme */
 $background: #191724;
 $surface: #1f1d2e;
-$primary: #eb6f92;
-$secondary: #31748f;
+$primary: #eb6f92; /* Rose */
+$secondary: #31748f; /* Pine */
+$accent: #9ccfd8; /* Foam */
+$warning: #f6c177; /* Gold */
+$error: #eb5e47; /* Love */
 $text: #e0def4;
 $text-muted: #6e6a86;
 
@@ -11,13 +14,13 @@ Screen {
     color: $text;
 }
 
-Header {
-    background: $secondary;
+Header, Footer {
+    background: $surface;
     color: $text;
 }
 
-Footer {
-    background: $surface;
+#left, #right {
+    border: round $secondary;
 }
 
 ListView > ListItem.--highlighted {
@@ -30,18 +33,44 @@ ListItem:hover {
     background: lighten($surface, 5%);
 }
 
-HeadlineItem > Horizontal > .headline-section {
-    color: $text;
+DataTable {
+    border: tall $secondary;
 }
 
-HeadlineItem > Horizontal > .headline-flag {
+DataTable:focus {
+    border: tall $accent;
+}
+
+Input {
+    border: tall $surface;
+    background: $background;
+}
+
+Input:focus {
+    border: tall $accent;
+}
+
+Button {
+    background: $primary;
+    color: $background;
+}
+
+Button:hover {
+    background: $primary-lighten-1;
+}
+
+MarkdownH1, MarkdownH2, MarkdownH3, MarkdownH4 {
+    background: $surface;
+    border: round $secondary;
     color: $primary;
 }
 
-HeadlineItem > Horizontal > .headline-title {
-    color: $text;
+MarkdownBlockquote {
+    background: $surface;
+    border-left: thick $accent;
 }
 
-MarkdownH1 {
-    color: $primary;
+MarkdownCodeBlock {
+    background: $surface;
+    border: round $text-muted;
 }

@@ -1,6 +1,11 @@
+/* Adwaita Dark Theme */
 $background: #242424;
 $surface: #303030;
-$primary: #3584e4;
+$primary: #3584e4; /* Blue */
+$secondary: #33d17a; /* Green */
+$accent: #16a085; /* Teal */
+$warning: #f6d32d; /* Yellow */
+$error: #e01b24; /* Red */
 $text: #eeeeec;
 $text-muted: #888888;
 
@@ -9,13 +14,13 @@ Screen {
     color: $text;
 }
 
-Header {
+Header, Footer {
     background: $surface;
     color: $text;
 }
 
-Footer {
-    background: lighten($background, 5%);
+#left, #right {
+    border: round $primary;
 }
 
 ListView > ListItem.--highlighted {
@@ -28,18 +33,44 @@ ListItem:hover {
     background: lighten($surface, 10%);
 }
 
-HeadlineItem > Horizontal > .headline-section {
+DataTable {
+    border: tall $primary;
+}
+
+DataTable:focus {
+    border: tall $accent;
+}
+
+Input {
+    border: tall $surface;
+    background: $background;
+}
+
+Input:focus {
+    border: tall $accent;
+}
+
+Button {
+    background: $primary;
     color: $text;
 }
 
-HeadlineItem > Horizontal > .headline-flag {
+Button:hover {
+    background: $primary-lighten-1;
+}
+
+MarkdownH1, MarkdownH2, MarkdownH3, MarkdownH4 {
+    background: $surface;
+    border: round $primary;
     color: $primary;
 }
 
-HeadlineItem > Horizontal > .headline-title {
-    color: $text;
+MarkdownBlockquote {
+    background: lighten($background, 5%);
+    border-left: thick $secondary;
 }
 
-MarkdownH1 {
-    color: $primary;
+MarkdownCodeBlock {
+    background: lighten($background, 5%);
+    border: round $surface;
 }

@@ -1,6 +1,11 @@
+/* Dracula Theme */
 $background: #282a36;
 $surface: #44475a;
-$primary: #bd93f9;
+$primary: #bd93f9; /* Purple */
+$secondary: #ff79c6; /* Pink */
+$accent: #50fa7b; /* Green */
+$warning: #f1fa8c; /* Yellow */
+$error: #ff5555; /* Red */
 $text: #f8f8f2;
 $text-muted: #6272a4;
 
@@ -9,13 +14,13 @@ Screen {
     color: $text;
 }
 
-Header {
+Header, Footer {
     background: $surface;
     color: $text;
 }
 
-Footer {
-    background: $background;
+#left, #right {
+    border: round $primary;
 }
 
 ListView > ListItem.--highlighted {
@@ -28,18 +33,44 @@ ListItem:hover {
     background: $text-muted;
 }
 
-HeadlineItem > Horizontal > .headline-section {
-    color: $text;
+DataTable {
+    border: tall $primary;
 }
 
-HeadlineItem > Horizontal > .headline-flag {
+DataTable:focus {
+    border: tall $accent;
+}
+
+Input {
+    border: tall $surface;
+    background: $background;
+}
+
+Input:focus {
+    border: tall $accent;
+}
+
+Button {
+    background: $primary;
+    color: $background;
+}
+
+Button:hover {
+    background: $primary-lighten-1;
+}
+
+MarkdownH1, MarkdownH2, MarkdownH3, MarkdownH4 {
+    background: $surface;
+    border: round $primary;
     color: $primary;
 }
 
-HeadlineItem > Horizontal > .headline-title {
-    color: $text;
+MarkdownBlockquote {
+    background: $background;
+    border-left: thick $secondary;
 }
 
-MarkdownH1 {
-    color: $primary;
+MarkdownCodeBlock {
+    background: $background;
+    border: round $surface;
 }
