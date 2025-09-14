@@ -1,0 +1,45 @@
+$background: #fafafa;
+$surface: #f5f5f5;
+$primary: #3584e4;
+$text: #3d3d3d;
+$text-muted: #999999;
+
+Screen {
+    background: $background;
+    color: $text;
+}
+
+Header {
+    background: $surface;
+    color: $text;
+}
+
+Footer {
+    background: darken($background, 5%);
+}
+
+ListView > ListItem.--highlighted {
+    background: $primary;
+    color: white;
+    text-style: bold;
+}
+
+ListItem:hover {
+    background: $surface;
+}
+
+HeadlineItem > Horizontal > .headline-section {
+    color: $text;
+}
+
+HeadlineItem > Horizontal > .headline-flag {
+    color: $primary;
+}
+
+HeadlineItem > Horizontal > .headline-title {
+    color: $text;
+}
+
+MarkdownH1 {
+    color: $primary;
+}

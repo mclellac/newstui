@@ -1,0 +1,173 @@
+/* default minimal styling (users can override with theme CSS) */
+Screen {
+  background: $surface;
+  color: $text;
+}
+
+Header {
+  background: $primary;
+  color: $text;
+}
+
+Footer {
+  background: $primary-darken-1;
+  color: $text;
+}
+
+#main {
+  layout: horizontal;
+  height: 1fr;
+  padding: 1;
+}
+
+#left {
+  width: 30;
+  padding-right: 1;
+  border: round $primary;
+}
+
+#right {
+  width: 1fr;
+  padding-left: 1;
+  border: round $primary;
+}
+
+.pane-title {
+  text-style: bold;
+  padding: 0 1;
+}
+
+ListView {
+  border: none;
+}
+
+ListItem {
+}
+
+ListItem:hover {
+  background: $primary-lighten-2;
+}
+
+ListView > ListItem.--highlighted {
+  background: $accent;
+  color: $text;
+}
+
+.summary {
+  color: $text-muted;
+  padding-left: 2;
+}
+
+#story-scroll {
+  padding: 1 0;
+}
+
+.read .headline-section {
+    color: $text-muted;
+}
+
+.read .headline-title {
+    color: $text-muted;
+    text-style: italic;
+}
+
+.read .headline-flag {
+    opacity: 0.7;
+}
+
+/* Added styles */
+Input {
+    border: tall $background-lighten-2;
+    background: $background-darken-1;
+}
+Input:focus {
+    border: tall $accent;
+}
+
+DataTable {
+    border: tall $primary;
+    background: $surface;
+    text-wrap: wrap;
+}
+
+DataTable:focus {
+    border: tall $accent;
+}
+
+Rule {
+    color: $primary-lighten-2;
+}
+
+LoadingIndicator {
+    color: $accent;
+}
+
+Markdown {
+    background: $surface;
+}
+
+MarkdownH1,
+MarkdownH2,
+MarkdownH3 {
+    text-style: bold;
+}
+
+StatusBar {
+    background: $primary-darken-1;
+    color: $text;
+}
+
+.summary-text {
+    padding: 1;
+    height: 10;
+}
+
+#settings-container {
+    layout: horizontal;
+    height: 1fr;
+    padding: 1;
+}
+
+#settings-left {
+    width: 1fr;
+    padding-right: 1;
+    border: round $primary;
+}
+
+#settings-right {
+    width: 2fr;
+    padding-left: 1;
+    border: round $primary;
+}
+
+#save-settings {
+    width: 100%;
+    margin: 1 0;
+}
+
+SectionListItem {
+    padding: 0 1;
+}
+
+HeadlineItem {
+    height: auto;
+    padding: 0 1;
+}
+
+.headline-container {
+    height: auto;
+}
+
+.headline-section {
+    width: 15;
+    text-align: left;
+}
+
+.headline-flag {
+    width: 10;
+    text-align: left;
+}
+
+.headline-title {
+    width: 1fr;
+}
