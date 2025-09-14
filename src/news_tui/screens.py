@@ -228,7 +228,7 @@ class SettingsScreen(Screen):
         themes = [
             f.replace(".css", "")
             for f in os.listdir(themes_dir)
-            if f.endswith(".css")
+            if f.endswith(".css") and f != "app.css"
         ]
         return themes
 
