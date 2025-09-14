@@ -6,6 +6,7 @@ from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.command import CommandPalette, Hit, Hits, Provider
 from textual.containers import Horizontal, Vertical
+from textual.message import Message
 from textual.worker import Worker, WorkerState
 from rich.text import Text
 from textual.widgets import (
@@ -32,6 +33,7 @@ from .datamodels import Section, Story
 from .sources.cbc import CBCSource
 from .screens import BookmarksScreen, SettingsScreen, StoryViewScreen
 from .widgets import HeadlineItem, SectionListItem, StatusBar
+from .messages import StatusUpdate
 
 
 class ThemeProvider(Provider):
@@ -130,6 +132,8 @@ class NewsApp(App):
 
         # Configure the headlines list
         self.query_one("#headlines-list", ListView).cursor_type = "row"
+
+        self.post_message(StatusUpdate("[b cyan]ctrl+l[/] to toggle sections"))
 
     def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
         name = getattr(event.worker, "name", None)
