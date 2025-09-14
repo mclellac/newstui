@@ -203,6 +203,12 @@ class SettingsScreen(Screen):
                     yield Button("Create Meta Section", id="create-meta-section")
             with TabPane("Theme", id="theme-tab"):
                 yield Select([], id="theme-select", prompt="Select a theme")
+            with TabPane("Layout", id="layout-tab"):
+                yield Select(
+                    [("Default", "default"), ("Compact", "compact")],
+                    id="layout-select",
+                    prompt="Select an article list layout",
+                )
         yield Button("Save", id="save-settings")
 
     def get_available_themes(self) -> list[str]:
@@ -221,10 +227,19 @@ class SettingsScreen(Screen):
         """Load sections and populate lists."""
         self.title = "Settings"
         self.run_worker(self.load_sections, name="load_settings_sections", thread=True)
+
+        # Set theme selector
         theme_select = self.query_one("#theme-select", Select)
         themes = self.get_available_themes()
         theme_select.set_options([(theme, theme) for theme in themes])
-        theme_select.value = self.app.theme
+        if self.app.theme in themes:
+            theme_select.value = self.app.theme
+        else:
+            theme_select.clear()
+
+        # Set layout selector
+        layout_select = self.query_one("#layout-select", Select)
+        layout_select.value = self.app.config.get("layout", "default")
 
     def on_input_changed(self, event: Input.Changed) -> None:
         if event.input.id == "meta-section-name":
@@ -283,10 +298,15 @@ class SettingsScreen(Screen):
         theme_select = self.query_one("#theme-select", Select)
         selected_theme = theme_select.value
 
+        # Get selected layout
+        layout_select = self.query_one("#layout-select", Select)
+        selected_layout = layout_select.value
+
         # Update config
         config = self.app.config
         config["sections"] = enabled_sections
         config["theme"] = selected_theme
+        config["layout"] = selected_layout
 
         save_config(config)
         self.app.notify("Settings saved!")
