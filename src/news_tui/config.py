@@ -134,7 +134,7 @@ def ensure_themes_are_copied() -> None:
     os.makedirs(themes_dir, exist_ok=True)
 
     try:
-        theme_files = importlib.resources.files("news_tui.themes")
+        theme_files = importlib.resources.files("news_tui.packaged_themes")
         for theme_file in theme_files.iterdir():
             if theme_file.is_file() and theme_file.name.endswith(".css"):
                 dest_path = os.path.join(themes_dir, theme_file.name)
@@ -143,4 +143,4 @@ def ensure_themes_are_copied() -> None:
                         shutil.copy(theme_file_path, dest_path)
                         logger.info(f"Copied theme '{theme_file.name}' to '{dest_path}'")
     except ModuleNotFoundError:
-        logger.error("Could not find the 'news_tui.themes' module to copy themes from.")
+        logger.error("Could not find the 'news_tui.packaged_themes' module to copy themes from.")
