@@ -8,7 +8,6 @@ from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.message import Message
 from textual.screen import Screen
 from textual.worker import Worker, WorkerState
-from .messages import StatusUpdate
 from textual.widgets import (
     Button,
     DataTable,
@@ -32,14 +31,7 @@ from .sources.cbc import CBCSource
 from .widgets import SectionCheckbox
 
 # Markdown & scroll fallbacks for different Textual versions
-try:
-    from textual.widgets import MarkdownViewer
-    MarkdownWidget = MarkdownViewer
-except ImportError:
-    try:
-        from textual.widgets import Markdown as MarkdownWidget
-    except ImportError:
-        MarkdownWidget = Static
+MarkdownWidget = Static
 
 try:
     from textual.containers import VerticalScroll  # some versions
@@ -84,7 +76,7 @@ class StoryViewScreen(Screen):
             pass
         self.query_one("#story-scroll").focus()
         self.load_story()
-        self.post_message(StatusUpdate("[b cyan]up/down[/] to scroll, [b cyan]o[/] to open"))
+        self.app.query_one("StatusBar").set_keybindings("[b cyan]up/down[/] to scroll, [b cyan]o[/] to open")
 
     def load_story(self) -> None:
         try:
@@ -119,7 +111,7 @@ class StoryViewScreen(Screen):
             md = self.query_one("#story-markdown")
             if isinstance(result, dict) and result.get("ok"):
                 content = result.get("content", "")
-                md.document.update(content)
+                md.update(content)
                 word_count = len(content.split())
                 time_to_read = max(1, round(word_count / 200))
                 self.sub_title = f"~{time_to_read} min read"
@@ -129,7 +121,7 @@ class StoryViewScreen(Screen):
                     if isinstance(result, dict)
                     else "Unable to load article."
                 )
-                md.document.update(f"[b {error_color}]{msg}[/]")
+                md.update(f"[b {error_color}]{msg}[/]")
         else:
             # worker not SUCCESS; if it's not running/pending treat as failure
             if event.state not in (WorkerState.PENDING, WorkerState.RUNNING):
@@ -137,16 +129,12 @@ class StoryViewScreen(Screen):
                     self.query_one("#story-loading", LoadingIndicator).display = False
                     self.query_one("#story-scroll").display = True
                     md = self.query_one("#story-markdown")
-                    md.document.update(f"[b {error_color}]Unable to load article[/]")
+                    md.update(f"[b {error_color}]Unable to load article[/]")
                 except Exception:
                     pass
 
     def action_open_in_browser(self) -> None:
         webbrowser.open(self.story.url)
-
-    def on_markdown_link_clicked(self, event: MarkdownWidget.LinkClicked) -> None:
-        """Handle clicks on links in Markdown."""
-        self.run_worker(lambda: webbrowser.open(event.href), thread=True)
 
     def action_reload_story(self) -> None:
         self.load_story()
