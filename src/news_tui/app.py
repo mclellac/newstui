@@ -17,20 +17,12 @@ from textual.widgets import (
     Rule,
 )
 
-import sys
-from .config import (
-    HOME_PAGE_URL,
-    load_config,
-    load_read_articles,
-    load_bookmarks,
-    save_bookmarks,
-    save_config,
-    save_read_articles,
-)
 from dataclasses import asdict
+
+from .config import HOME_PAGE_URL, ConfigManager
 from .datamodels import Section, Story
-from .sources.cbc import CBCSource
 from .screens import BookmarksScreen, SettingsScreen, StoryViewScreen
+from .sources.cbc import CBCSource
 from .themes import THEMES
 from .widgets import HeadlineItem, SectionListItem, StatusBar
 
@@ -72,20 +64,17 @@ class NewsApp(App):
 
     def __init__(
         self,
+        config_manager: ConfigManager,
         theme: Optional[str] = None,
-        config: Optional[dict[str, Any]] = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
+        self.config_manager = config_manager
         self.current_section: Optional[Section] = None
         self._theme_name = theme
         self.stories: List[Story] = []
-        self.read_articles: set[str] = set()
-        self.bookmarks: List[dict] = []
-        self.config = config or {}
-        cbc_config = self.config.get("sources", {}).get("cbc", {})
+        cbc_config = self.config_manager.get_source_config("cbc")
         self.source = CBCSource(cbc_config)
-        self.meta_sections = self.config.get("meta_sections", {})
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -102,8 +91,6 @@ class NewsApp(App):
         yield StatusBar()
 
     def on_mount(self) -> None:
-        self.read_articles = load_read_articles()
-        self.bookmarks = load_bookmarks()
         self.screen.bindings = self.BINDINGS
         # Start loading sections on mount
         self.run_worker(self.source.get_sections, name="sections_loader", thread=True)
@@ -148,12 +135,12 @@ class NewsApp(App):
         ]
 
         # Filter sections based on config
-        enabled_sections = self.config.get("sections")
+        enabled_sections = self.config_manager.config.get("sections")
         if enabled_sections:
             sections = [s for s in sections if s.title in enabled_sections]
 
         all_sections = sections.copy()
-        for meta_section_name in self.meta_sections:
+        for meta_section_name in self.config_manager.meta_sections:
             all_sections.insert(
                 0, Section(title=meta_section_name, url="meta:" + meta_section_name)
             )
@@ -215,7 +202,9 @@ class NewsApp(App):
         headlines_list.mount(LoadingIndicator())
         self.run_worker(
             lambda: self.source.get_stories(
-                section, self.read_articles, self.bookmarks
+                section,
+                self.config_manager.read_articles,
+                self.config_manager.bookmarks,
             ),
             name="headlines_loader",
             thread=True,
@@ -223,7 +212,7 @@ class NewsApp(App):
 
     def _load_headlines_for_meta_section(self, section: Section) -> None:
         meta_section_name = section.url.replace("meta:", "")
-        section_names = self.meta_sections.get(meta_section_name, [])
+        section_names = self.config_manager.meta_sections.get(meta_section_name, [])
         if not section_names:
             return
 
@@ -241,7 +230,9 @@ class NewsApp(App):
                 for s in all_sections:
                     if s.title == section_name:
                         stories = self.source.get_stories(
-                            s, self.read_articles, self.bookmarks
+                            s,
+                            self.config_manager.read_articles,
+                            self.config_manager.bookmarks,
                         )
                         for story in stories:
                             if story.url not in seen_urls:
@@ -267,8 +258,8 @@ class NewsApp(App):
 
     def _open_story(self, story: Story) -> None:
         story.read = True
-        self.read_articles.add(story.url)
-        save_read_articles(self.read_articles)
+        self.config_manager.read_articles.add(story.url)
+        self.config_manager.save()
         self._update_headlines_list(self.stories)
         self.push_screen(StoryViewScreen(story, self.source, self.current_section))
 
@@ -321,10 +312,12 @@ class NewsApp(App):
         story = item.story
         story.bookmarked = not story.bookmarked
         if story.bookmarked:
-            self.bookmarks.append(asdict(story))
+            self.config_manager.bookmarks.append(asdict(story))
         else:
-            self.bookmarks = [b for b in self.bookmarks if b["url"] != story.url]
-        save_bookmarks(self.bookmarks)
+            self.config_manager.bookmarks = [
+                b for b in self.config_manager.bookmarks if b["url"] != story.url
+            ]
+        self.config_manager.save()
         self._update_headlines_list(self.stories)
 
     def action_show_bookmarks(self) -> None:
@@ -337,19 +330,12 @@ class NewsApp(App):
     def on_settings_closed(self, _: Any) -> None:
         """Called when settings screen is closed."""
         # reload config and sections
-        self.config = load_config()
-        self.meta_sections = self.config.get("meta_sections", {})
+        self.config_manager._load()  # Use internal _load to refresh from disk
         self.run_worker(self.source.get_sections, name="sections_loader", thread=True)
 
     def action_switch_theme(self, theme: str) -> None:
-        print(f"DIAGNOSTIC: action_switch_theme started. Switching to '{theme}'.", file=sys.stderr)
         self.theme = theme
-        print(f"DIAGNOSTIC: self.config before modification: {self.config}", file=sys.stderr)
-        self.config["theme"] = theme
-        print(f"DIAGNOSTIC: self.config after modification: {self.config}", file=sys.stderr)
-        print("DIAGNOSTIC: Calling save_config.", file=sys.stderr)
-        save_config(self.config)
-        print("DIAGNOSTIC: action_switch_theme finished.", file=sys.stderr)
+        self.config_manager.theme = theme
 
     def action_toggle_left_pane(self) -> None:
         """Toggle the left pane."""

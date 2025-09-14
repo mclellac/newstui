@@ -5,18 +5,15 @@ import logging
 import os
 import re
 from datetime import datetime
-from typing import Any, Dict, Optional
+from pathlib import Path
+from typing import Any, Dict, List, Set
 
-# --- Configuration ---
+# --- Constants ---
 HOME_PAGE_URL = "https://www.cbc.ca/lite"
 SECTIONS_PAGE_URL = "https://www.cbc.ca/lite/sections"
 DOMAIN_BASE = "https://www.cbc.ca"
 HTTP_TIMEOUT = 15
 MIN_ARTICLE_WORDS = 15
-
-CONFIG_PATH = os.path.expanduser("~/.config/news/config.json")
-READ_ARTICLES_FILE = os.path.expanduser("~/.config/news/read_articles.json")
-BOOKMARKS_FILE = os.path.expanduser("~/.config/news/bookmarks.json")
 
 REQUEST_HEADERS = {
     "User-Agent": (
@@ -54,78 +51,62 @@ def enable_debug_log_to_tmp() -> str:
     return debug_path
 
 
-def load_read_articles() -> set[str]:
-    """Load the set of read article URLs from the config file."""
-    if not os.path.exists(READ_ARTICLES_FILE):
-        return set()
-    try:
-        with open(READ_ARTICLES_FILE, "r") as f:
-            return set(json.load(f))
-    except (IOError, json.JSONDecodeError):
-        return set()
+class ConfigManager:
+    """Manages application configuration."""
 
+    def __init__(self, config_dir: Path | None = None):
+        self.config_dir = config_dir or Path.home() / ".config/news"
+        self.config_path = self.config_dir / "config.json"
+        self.read_articles_path = self.config_dir / "read_articles.json"
+        self.bookmarks_path = self.config_dir / "bookmarks.json"
 
-def save_read_articles(read_articles: set[str]) -> None:
-    """Save the set of read article URLs to the config file."""
-    try:
-        with open(READ_ARTICLES_FILE, "w") as f:
-            json.dump(list(read_articles), f)
-    except IOError:
-        pass
+        self.config: Dict[str, Any] = {}
+        self.read_articles: Set[str] = set()
+        self.bookmarks: List[Dict] = []
 
+        os.makedirs(self.config_dir, exist_ok=True)
+        self._load()
 
-def load_bookmarks() -> list[dict]:
-    """Load the list of bookmarked articles from the config file."""
-    if not os.path.exists(BOOKMARKS_FILE):
-        return []
-    try:
-        with open(BOOKMARKS_FILE, "r") as f:
-            return json.load(f)
-    except (IOError, json.JSONDecodeError):
-        return []
+    def _load(self) -> None:
+        """Load all configuration files."""
+        self.config = self._load_json(self.config_path)
+        self.read_articles = set(self._load_json(self.read_articles_path, default=[]))
+        self.bookmarks = self._load_json(self.bookmarks_path, default=[])
 
+    def save(self) -> None:
+        """Save all configuration files."""
+        self._save_json(self.config_path, self.config)
+        self._save_json(self.read_articles_path, list(self.read_articles))
+        self._save_json(self.bookmarks_path, self.bookmarks)
 
-def save_bookmarks(bookmarks: list[dict]) -> None:
-    """Save the list of bookmarked articles to the config file."""
-    try:
-        with open(BOOKMARKS_FILE, "w") as f:
-            json.dump(bookmarks, f)
-    except IOError:
-        pass
+    def _load_json(self, path: Path, default: Any = None) -> Any:
+        if not path.exists():
+            return default if default is not None else {}
+        try:
+            with open(path, "r") as f:
+                return json.load(f)
+        except (IOError, json.JSONDecodeError):
+            return default if default is not None else {}
 
+    def _save_json(self, path: Path, data: Any) -> None:
+        try:
+            with open(path, "w") as f:
+                json.dump(data, f, indent=2)
+        except IOError as e:
+            logger.error("Failed to save to %s: %s", path, e)
 
-def load_config() -> Dict[str, Any]:
-    """Load the main configuration file."""
-    if not os.path.exists(CONFIG_PATH):
-        logger.info("Config file not found at %s", CONFIG_PATH)
-        return {}
-    try:
-        with open(CONFIG_PATH, "r") as f:
-            config = json.load(f)
-            logger.info("Loaded config from %s", CONFIG_PATH)
-            return config
-    except (IOError, json.JSONDecodeError) as e:
-        logger.error("Failed to load config from %s: %s", CONFIG_PATH, e)
-        return {}
+    @property
+    def theme(self) -> str:
+        return self.config.get("theme", "dracula")
 
+    @theme.setter
+    def theme(self, theme_name: str) -> None:
+        self.config["theme"] = theme_name
+        self.save()
 
-def save_config(config: Dict[str, Any]) -> None:
-    """Save the main configuration file."""
-    import sys
-    print(f"DIAGNOSTIC: save_config called. Preparing to write to {CONFIG_PATH}", file=sys.stderr)
-    print(f"DIAGNOSTIC: The config dictionary to be saved is: {config}", file=sys.stderr)
-    try:
-        os.makedirs(os.path.dirname(CONFIG_PATH), exist_ok=True)
-        with open(CONFIG_PATH, "w") as f:
-            json.dump(config, f, indent=2)
-        print(f"DIAGNOSTIC: Successfully wrote to {CONFIG_PATH}", file=sys.stderr)
-        logger.info("Saved config to %s", CONFIG_PATH)
-    except Exception as e:
-        print(f"DIAGNOSTIC: CRITICAL - FAILED to write to {CONFIG_PATH}: {e}", file=sys.stderr)
-        logger.error("Failed to save config to %s: %s", CONFIG_PATH, e)
+    def get_source_config(self, source_name: str) -> Dict[str, Any]:
+        return self.config.get("sources", {}).get(source_name, {})
 
-
-def load_theme_name_from_config() -> Optional[str]:
-    """Return theme name if configured and present; else None."""
-    config = load_config()
-    return config.get("theme")
+    @property
+    def meta_sections(self) -> Dict[str, List[str]]:
+        return self.config.get("meta_sections", {})

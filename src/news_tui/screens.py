@@ -22,7 +22,6 @@ from textual.widgets import (
     Static,
 )
 
-from .config import load_bookmarks, save_config
 from .datamodels import Section, Story
 from .sources.cbc import CBCSource
 from .themes import THEMES
@@ -153,8 +152,7 @@ class BookmarksScreen(Screen):
         table = self.query_one(DataTable)
         table.add_column("Title", width=50)
         table.add_column("Summary")
-        bookmarks = load_bookmarks()
-        for b in bookmarks:
+        for b in self.app.config_manager.bookmarks:
             table.add_row(b["title"], b["summary"] or "")
 
 
@@ -201,21 +199,17 @@ class SettingsScreen(Screen):
         sections_list = self.query_one("#sections-list", ListView)
         meta_constituents_list = self.query_one("#meta-sections-constituents", ListView)
 
-        enabled_sections = self.app.config.get("sections", [])
+        enabled_sections = self.app.config_manager.config.get("sections", [])
         if not enabled_sections:  # if not configured, enable all by default
             enabled_sections = [s.title for s in message.sections]
 
         for section in message.sections:
             is_enabled = section.title in enabled_sections
             cb = Checkbox(section.title, is_enabled)
-            # monkey patch the section object to the checkbox
-            # this is not ideal, but it's a quick way to get it working
-            # A better way would be to create a custom widget that holds the section
             setattr(cb, "section", section)
             item = ListItem(cb)
             sections_list.append(item)
 
-            # also populate the list for meta sections
             cb_meta = Checkbox(section.title, False)
             setattr(cb_meta, "section", section)
             item_meta = ListItem(cb_meta)
@@ -228,22 +222,16 @@ class SettingsScreen(Screen):
             self.create_meta_section()
 
     def save_settings(self) -> None:
-        # Get selected sections
         sections_list = self.query_one("#sections-list", ListView)
-        enabled_sections = []
-        for item in sections_list.children:
-            checkbox = item.query_one(Checkbox)
-            if checkbox.value:
-                enabled_sections.append(getattr(checkbox, "section").title)
-
-        # Update config
-        config = self.app.config
-        config["sections"] = enabled_sections
-
-        save_config(config)
+        enabled_sections = [
+            getattr(item.query_one(Checkbox), "section").title
+            for item in sections_list.children
+            if item.query_one(Checkbox).value
+        ]
+        self.app.config_manager.config["sections"] = enabled_sections
+        self.app.config_manager.save()
         self.app.notify("Settings saved!")
         self.app.pop_screen()
-        # The app should reload sections based on the new config.
 
     def create_meta_section(self) -> None:
         meta_section_name_input = self.query_one("#meta-section-name")
@@ -253,11 +241,11 @@ class SettingsScreen(Screen):
             return
 
         constituents_list = self.query_one("#meta-sections-constituents", ListView)
-        selected_sections = []
-        for item in constituents_list.children:
-            checkbox = item.query_one(Checkbox)
-            if checkbox.value:
-                selected_sections.append(getattr(checkbox, "section").title)
+        selected_sections = [
+            getattr(item.query_one(Checkbox), "section").title
+            for item in constituents_list.children
+            if item.query_one(Checkbox).value
+        ]
 
         if not selected_sections:
             self.app.notify(
@@ -265,12 +253,12 @@ class SettingsScreen(Screen):
             )
             return
 
-        config = self.app.config
-        if "meta_sections" not in config:
-            config["meta_sections"] = {}
-        config["meta_sections"][meta_section_name] = selected_sections
-        save_config(config)
+        meta_sections = self.app.config_manager.meta_sections
+        meta_sections[meta_section_name] = selected_sections
+        self.app.config_manager.config["meta_sections"] = meta_sections
+        self.app.config_manager.save()
         self.app.notify(f"Meta section '{meta_section_name}' created.")
+
         meta_section_name_input.value = ""
         for item in constituents_list.children:
             item.query_one(Checkbox).value = False
