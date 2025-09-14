@@ -6,6 +6,8 @@ import os
 import re
 from datetime import datetime
 from typing import Any, Dict, Optional
+import importlib.resources
+import shutil
 
 # --- Configuration ---
 HOME_PAGE_URL = "https://www.cbc.ca/lite"
@@ -124,3 +126,21 @@ def load_theme_name_from_config() -> Optional[str]:
     """Return theme name if configured and present; else None."""
     config = load_config()
     return config.get("theme")
+
+
+def ensure_themes_are_copied() -> None:
+    """Copy built-in themes to the user's config directory."""
+    themes_dir = os.path.join(os.path.dirname(CONFIG_PATH), "themes")
+    os.makedirs(themes_dir, exist_ok=True)
+
+    try:
+        theme_files = importlib.resources.files("news_tui.themes")
+        for theme_file in theme_files.iterdir():
+            if theme_file.is_file() and theme_file.name.endswith(".css"):
+                dest_path = os.path.join(themes_dir, theme_file.name)
+                if not os.path.exists(dest_path):
+                    with importlib.resources.as_file(theme_file) as theme_file_path:
+                        shutil.copy(theme_file_path, dest_path)
+                        logger.info(f"Copied theme '{theme_file.name}' to '{dest_path}'")
+    except ModuleNotFoundError:
+        logger.error("Could not find the 'news_tui.themes' module to copy themes from.")

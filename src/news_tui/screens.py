@@ -10,7 +10,6 @@ from textual.screen import Screen
 from textual.worker import Worker, WorkerState
 from textual.widgets import (
     Button,
-    Checkbox,
     DataTable,
     Footer,
     Header,
@@ -26,7 +25,7 @@ from textual.widgets import (
 )
 
 import os
-from .config import CONFIG_PATH, load_bookmarks, save_config, logger
+from .config import CONFIG_PATH, load_bookmarks, save_config
 from .datamodels import Section, Story
 from .sources.cbc import CBCSource
 from .themes import THEMES
@@ -57,6 +56,7 @@ class StoryViewScreen(Screen):
         Binding("r", "reload_story", "Reload"),
         Binding("j,down", "scroll_down", "Scroll Down"),
         Binding("k,up", "scroll_up", "Scroll Up"),
+        Binding("t", "toggle_toc", "Toggle ToC"),
     ]
 
     def __init__(self, story: Story, source: CBCSource, section: Section):
@@ -71,7 +71,10 @@ class StoryViewScreen(Screen):
         # loading indicator and scrollable Markdown
         loading = LoadingIndicator(id="story-loading")
         yield loading
-        yield VerticalScroll(MarkdownWidget("", id="story-markdown"), id="story-scroll")
+        yield VerticalScroll(
+            MarkdownWidget("", id="story-markdown", show_table_of_contents=False),
+            id="story-scroll",
+        )
 
     def on_mount(self) -> None:
         self.title = self.story.title
@@ -150,6 +153,11 @@ class StoryViewScreen(Screen):
     def action_reload_story(self) -> None:
         self.load_story()
 
+    def action_toggle_toc(self) -> None:
+        """Toggle the table of contents."""
+        md_viewer = self.query_one(MarkdownWidget)
+        md_viewer.show_table_of_contents = not md_viewer.show_table_of_contents
+
     def action_scroll_down(self) -> None:
         self.query_one("#story-scroll").scroll_down()
 
@@ -212,6 +220,18 @@ class SettingsScreen(Screen):
                 )
         yield Button("Save", id="save-settings")
 
+    def get_available_themes(self) -> list[str]:
+        """Get a list of available themes."""
+        themes_dir = os.path.join(os.path.dirname(CONFIG_PATH), "themes")
+        if not os.path.isdir(themes_dir):
+            return []
+        themes = [
+            f.replace(".css", "")
+            for f in os.listdir(themes_dir)
+            if f.endswith(".css")
+        ]
+        return themes
+
     def on_mount(self) -> None:
         """Load sections and populate lists."""
         self.title = "Settings"
@@ -219,7 +239,7 @@ class SettingsScreen(Screen):
 
         # Set theme selector
         theme_select = self.query_one("#theme-select", Select)
-        themes = list(self.app.themes.keys())
+        themes = self.get_available_themes()
         theme_select.set_options([(theme, theme) for theme in themes])
         if self.app.theme in themes:
             theme_select.value = self.app.theme
@@ -238,14 +258,14 @@ class SettingsScreen(Screen):
             else:
                 constituents_list.remove_class("highlight-list")
 
-    def on_select_changed(self, event: Select.Changed) -> None:
-        if event.select.id == "theme-select":
-            self.app.theme = event.value
-
     def load_sections(self) -> None:
         """Load sections in a worker."""
         all_sections = self.app.source.get_sections()
         self.post_message(self.SectionsLoaded(all_sections))
+
+    def on_select_changed(self, event: Select.Changed) -> None:
+        if event.select.id == "theme-select":
+            self.app.theme = event.value
 
     def on_settings_screen_sections_loaded(
         self, message: SettingsScreen.SectionsLoaded
@@ -268,11 +288,6 @@ class SettingsScreen(Screen):
             item_meta = ListItem(cb_meta)
             meta_constituents_list.append(item_meta)
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "save-settings":
-            self.save_settings()
-        elif event.button.id == "create-meta-section":
-            self.create_meta_section()
 
     def save_settings(self) -> None:
         # Get selected sections
@@ -330,7 +345,6 @@ class SettingsScreen(Screen):
             )
             return
 
-        logger.info(f"Creating meta section '{meta_section_name}' with sections: {selected_sections}")
         config = self.app.config
         if "meta_sections" not in config:
             config["meta_sections"] = {}
