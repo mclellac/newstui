@@ -30,23 +30,8 @@ from dataclasses import asdict
 from .datamodels import Section, Story
 from .sources.cbc import CBCSource
 from .screens import BookmarksScreen, SettingsScreen, StoryViewScreen
-from .theme_definitions import THEMES
+from .themes import get_theme_names, get_theme_path
 from .widgets import HeadlineItem, SectionListItem, StatusBar
-
-
-class ThemeProvider(Provider):
-    async def search(self, query: str) -> Hits:
-        """Search for a theme."""
-        matcher = self.matcher(query)
-
-        for theme_name in THEMES:
-            score = matcher.match(theme_name)
-            if score > 0:
-                yield Hit(
-                    score,
-                    matcher.highlight(f"Switch to {theme_name} theme"),
-                    self.app.action_switch_theme(theme_name),
-                )
 
 
 class NewsApp(App):
@@ -55,7 +40,7 @@ class NewsApp(App):
 
     CSS_PATH = "app.css"
 
-    COMMANDS = App.COMMANDS | {ThemeProvider}
+    COMMANDS = App.COMMANDS
 
     BINDINGS = [
         Binding("q", "quit", "Quit"),
@@ -78,7 +63,7 @@ class NewsApp(App):
     ):
         super().__init__(**kwargs)
         self.current_section: Optional[Section] = None
-        self._theme_name = theme
+        self._theme_name = theme or "dracula"
         self.stories: List[Story] = []
         self.read_articles: set[str] = set()
         self.bookmarks: List[dict] = []
@@ -86,6 +71,18 @@ class NewsApp(App):
         cbc_config = self.config.get("sources", {}).get("cbc", {})
         self.source = CBCSource(cbc_config)
         self.meta_sections = self.config.get("meta_sections", {})
+
+        # Set the CSS path to include the theme
+        theme_path = get_theme_path(self._theme_name)
+        self.CSS_PATH = [
+            "app.css",
+            theme_path,
+        ]
+
+    @property
+    def theme_name(self) -> str:
+        return self._theme_name
+
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -116,13 +113,6 @@ class NewsApp(App):
 
         # Configure the headlines list
         self.query_one("#headlines-list", ListView).cursor_type = "row"
-
-        # Register all themes
-        for name, theme in THEMES.items():
-            self.register_theme(theme)
-
-        # Set the theme
-        self.theme = self._theme_name
 
     def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
         name = getattr(event.worker, "name", None)
@@ -341,9 +331,6 @@ class NewsApp(App):
         self.config = load_config()
         self.meta_sections = self.config.get("meta_sections", {})
         self.run_worker(self.source.get_sections, name="sections_loader", thread=True)
-
-    def action_switch_theme(self, theme: str) -> None:
-        self.theme = theme
 
     def action_toggle_left_pane(self) -> None:
         """Toggle the left pane."""

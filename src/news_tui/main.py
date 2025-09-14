@@ -10,7 +10,7 @@ from typing import Optional
 
 from .app import NewsApp
 from .config import enable_debug_log_to_tmp, load_config
-from .theme_definitions import THEMES
+from .themes import get_theme_names
 
 logger = logging.getLogger("news")
 
@@ -22,7 +22,7 @@ def main() -> None:
     parser.add_argument(
         "--theme",
         type=str,
-        help=f"Set theme for this run. Available: {', '.join(THEMES.keys())}",
+        help=f"Set theme for this run. Available: {', '.join(get_theme_names())}",
     )
     args = parser.parse_args()
 
@@ -33,7 +33,7 @@ def main() -> None:
     config = load_config()
     theme_name = args.theme or config.get("theme") or "dracula"
 
-    if theme_name not in THEMES:
+    if theme_name not in get_theme_names():
         print(f"Theme '{theme_name}' not found, falling back to dracula.", file=sys.stderr)
         theme_name = "dracula"
 
