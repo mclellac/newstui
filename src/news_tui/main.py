@@ -10,7 +10,7 @@ from typing import Optional
 
 from .app import NewsApp
 from .config import enable_debug_log_to_tmp, load_config
-from .themes import THEMES
+from .theme_definitions import THEMES
 
 logger = logging.getLogger("news")
 
