@@ -54,8 +54,8 @@ class StoryViewScreen(Screen):
         Binding("escape,q,b,left", "app.pop_screen", "Back"),
         Binding("o", "open_in_browser", "Open in browser"),
         Binding("r", "reload_story", "Reload"),
-        Binding("j,down", "scroll_down", "Scroll Down"),
-        Binding("k,up", "scroll_up", "Scroll Up"),
+        Binding("down", "scroll_down", "Scroll Down"),
+        Binding("up", "scroll_up", "Scroll Up"),
         Binding("t", "toggle_toc", "Toggle ToC"),
     ]
 
@@ -85,7 +85,7 @@ class StoryViewScreen(Screen):
             pass
         self.query_one(MarkdownWidget).focus()
         self.load_story()
-        self.post_message(StatusUpdate("[b cyan]j/k, up/down[/] to scroll, [b cyan]o[/] to open"))
+        self.post_message(StatusUpdate("[b cyan]up/down[/] to scroll, [b cyan]o[/] to open"))
 
     def load_story(self) -> None:
         try:
