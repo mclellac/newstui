@@ -171,11 +171,3 @@ HeadlineItem {
 .headline-title {
     width: 1fr;
 }
-
-#save-settings.saved {
-    background: $success;
-}
-
-#meta-sections-constituents.highlight-list {
-    border: round $accent;
-}

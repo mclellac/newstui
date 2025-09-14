@@ -4,17 +4,11 @@ from datetime import datetime
 
 from textual.app import ComposeResult
 from textual.containers import Horizontal
-from textual.widgets import Checkbox, ListItem, Static
+from textual.widgets import ListItem, Static
 from textual.reactive import reactive
 
 from .datamodels import Section, Story
 from .themes import THEMES
-
-
-class SectionCheckbox(Checkbox):
-    def __init__(self, label: str, value: bool, section: Section):
-        super().__init__(label, value)
-        self.section = section
 
 
 # --- UI Widgets ---
@@ -37,15 +31,6 @@ class HeadlineItem(ListItem):
             yield Static(self.story.section, classes="headline-section")
             yield Static(self.story.flag or "", classes="headline-flag")
             yield Static(self.story.title, classes="headline-title")
-
-
-class CompactHeadlineItem(ListItem):
-    def __init__(self, story: Story):
-        super().__init__()
-        self.story = story
-
-    def compose(self) -> ComposeResult:
-        yield Static(self.story.title, classes="headline-title")
 
 
 class StatusBar(Static):
