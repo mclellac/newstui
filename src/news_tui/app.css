@@ -76,6 +76,10 @@ ListView > ListItem.--highlighted {
 }
 
 /* Added styles */
+#headline-filter {
+    display: none;
+}
+
 Input {
     border: tall $background-lighten-2;
     background: $background-darken-1;
