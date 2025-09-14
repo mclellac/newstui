@@ -56,7 +56,6 @@ class StoryViewScreen(Screen):
         Binding("r", "reload_story", "Reload"),
         Binding("down", "scroll_down", "Scroll Down"),
         Binding("up", "scroll_up", "Scroll Up"),
-        Binding("t", "toggle_toc", "Toggle ToC"),
     ]
 
     def __init__(self, story: Story, source: CBCSource, section: Section):
@@ -72,7 +71,7 @@ class StoryViewScreen(Screen):
         loading = LoadingIndicator(id="story-loading")
         yield loading
         yield VerticalScroll(
-            MarkdownWidget("", id="story-markdown", show_table_of_contents=False),
+            MarkdownWidget("", id="story-markdown"),
             id="story-scroll",
         )
 
@@ -83,7 +82,7 @@ class StoryViewScreen(Screen):
             self.query_one("#story-loading", LoadingIndicator).display = False
         except Exception:
             pass
-        self.query_one(MarkdownWidget).focus()
+        self.query_one("#story-scroll").focus()
         self.load_story()
         self.post_message(StatusUpdate("[b cyan]up/down[/] to scroll, [b cyan]o[/] to open"))
 
@@ -151,11 +150,6 @@ class StoryViewScreen(Screen):
 
     def action_reload_story(self) -> None:
         self.load_story()
-
-    def action_toggle_toc(self) -> None:
-        """Toggle the table of contents."""
-        md_viewer = self.query_one(MarkdownWidget)
-        md_viewer.show_table_of_contents = not md_viewer.show_table_of_contents
 
     def action_scroll_down(self) -> None:
         self.query_one("#story-scroll").scroll_down()
