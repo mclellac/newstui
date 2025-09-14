@@ -24,13 +24,14 @@ from .config import (
     load_bookmarks,
     save_bookmarks,
     save_read_articles,
+    ensure_themes_are_copied,
 )
 from dataclasses import asdict
 from .datamodels import Section, Story
 from .sources.cbc import CBCSource
 from .screens import BookmarksScreen, SettingsScreen, StoryViewScreen
 from .themes import THEMES
-from .widgets import HeadlineItem, SectionListItem, StatusBar
+from .widgets import CompactHeadlineItem, HeadlineItem, SectionListItem, StatusBar
 
 
 class ThemeProvider(Provider):
@@ -66,6 +67,7 @@ class NewsApp(App):
         Binding("right", "nav_right", "Navigate Right"),
         Binding("ctrl+p", "command_palette", "Commands"),
         Binding("ctrl+l", "toggle_left_pane", "Toggle Sections"),
+        Binding("/", "focus_filter", "Search"),
     ]
 
     def __init__(
@@ -100,6 +102,7 @@ class NewsApp(App):
         yield StatusBar()
 
     def on_mount(self) -> None:
+        ensure_themes_are_copied()
         self.read_articles = load_read_articles()
         self.bookmarks = load_bookmarks()
         self.screen.bindings = self.BINDINGS
@@ -181,8 +184,14 @@ class NewsApp(App):
         if not stories:
             headlines_list.display = False
             return
+
+        layout = self.config.get("layout", "default")
         for s in stories:
-            item = HeadlineItem(s)
+            if layout == "compact":
+                item = CompactHeadlineItem(s)
+            else:
+                item = HeadlineItem(s)
+
             if s.read:
                 item.add_class("read")
             headlines_list.append(item)
@@ -346,3 +355,7 @@ class NewsApp(App):
         """Toggle the left pane."""
         left_pane = self.query_one("#left")
         left_pane.display = not left_pane.display
+
+    def action_focus_filter(self) -> None:
+        """Focus the filter input."""
+        self.query_one(Input).focus()
