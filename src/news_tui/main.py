@@ -9,7 +9,7 @@ import sys
 from typing import Optional
 
 from .app import NewsApp
-from .config import enable_debug_log_to_tmp, load_config
+from .config import ConfigManager, enable_debug_log_to_tmp
 from .themes import THEMES
 
 logger = logging.getLogger("news")
@@ -30,17 +30,20 @@ def main() -> None:
         debug_path = enable_debug_log_to_tmp()
         print(f"Debug logging enabled: {debug_path}", file=sys.stderr)
 
-    config = load_config()
-    theme_name = args.theme or config.get("theme") or "dracula"
+    config_manager = ConfigManager()
+    theme_name = args.theme or config_manager.theme
 
     if theme_name not in THEMES:
-        print(f"Theme '{theme_name}' not found, falling back to dracula.", file=sys.stderr)
+        print(
+            f"Theme '{theme_name}' not found, falling back to dracula.",
+            file=sys.stderr,
+        )
         theme_name = "dracula"
 
     logger.info("Using theme: %s", theme_name)
 
     try:
-        app = NewsApp(theme=theme_name, config=config)
+        app = NewsApp(config_manager=config_manager, theme=theme_name)
         app.run()
     except Exception as e:
         logger.exception("Application crashed: %s", e)

@@ -22,8 +22,6 @@ from ..config import (
     REQUEST_HEADERS,
     RETRY_ATTEMPTS,
     SECTIONS_PAGE_URL,
-    load_read_articles,
-    load_bookmarks,
 )
 from ..datamodels import Section, Story
 
@@ -156,8 +154,24 @@ class CBCSource:
                         story.url,
                     )
             main = soup.find("main") or soup
-            paras = [p.get_text(" ", strip=True) for p in main.find_all("p")]
-            candidate = "\n\n".join([p for p in paras if p]).strip()
+            paras = []
+            # Iterate through descendants and stop when we hit "More Stories"
+            for element in main.descendants:
+                if (
+                    element.name in ["h1", "h2", "h3", "h4", "h5", "h6"]
+                    and "More Stories" in element.get_text()
+                ):
+                    break
+                if element.name == "p":
+                    text = element.get_text(" ", strip=True)
+                    if text:
+                        paras.append(text)
+
+            # Re-add the title at the top of the content
+            title = soup.find("h1")
+            title_text = f"# {title.get_text(strip=True)}\n\n" if title else ""
+
+            candidate = (title_text + "\n\n".join(paras)).strip()
             if candidate and not _is_placeholder_text(candidate):
                 return {"ok": True, "content": candidate}
         except Exception as e:
