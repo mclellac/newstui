@@ -104,7 +104,7 @@ class NewsApp(App):
             yield Rule(orientation="vertical")
             with Vertical(id="right"):
                 yield Static("Headlines", classes="pane-title")
-                yield Input(placeholder="Filter headlines...")
+                yield Input(placeholder="Filter headlines...", id="headline-filter")
                 yield ListView(id="headlines-list")
         yield StatusBar()
 
@@ -309,18 +309,29 @@ class NewsApp(App):
                 pass
 
     def on_input_changed(self, event: Input.Changed) -> None:
-        query = event.value.strip().lower()
-        if not query:
-            self._update_headlines_list(self.stories)
-            return
-        filtered_stories = [
-            s
-            for s in self.stories
-            if query in s.title.lower()
-            or query in s.section.lower()
-            or (s.flag and query in s.flag.lower())
-        ]
-        self._update_headlines_list(filtered_stories)
+        if event.input.id == "headline-filter":
+            query = event.value.strip().lower()
+            if not query:
+                self._update_headlines_list(self.stories)
+                return
+            filtered_stories = [
+                s
+                for s in self.stories
+                if query in s.title.lower()
+                or query in s.section.lower()
+                or (s.flag and query in s.flag.lower())
+            ]
+            self._update_headlines_list(filtered_stories)
+
+    def on_input_blur(self, event: Input.Blur) -> None:
+        if event.input.id == "headline-filter":
+            if not event.input.value:
+                event.input.display = False
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        if event.input.id == "headline-filter":
+            if not event.input.value:
+                event.input.display = False
 
     def action_bookmark(self) -> None:
         headlines_list = self.query_one("#headlines-list", ListView)
@@ -364,4 +375,6 @@ class NewsApp(App):
 
     def action_focus_filter(self) -> None:
         """Focus the filter input."""
-        self.query_one(Input).focus()
+        filter_input = self.query_one("#headline-filter")
+        filter_input.display = True
+        filter_input.focus()

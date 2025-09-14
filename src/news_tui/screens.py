@@ -83,7 +83,7 @@ class StoryViewScreen(Screen):
             self.query_one("#story-loading", LoadingIndicator).display = False
         except Exception:
             pass
-        self.query_one("#story-scroll").focus()
+        self.query_one(MarkdownWidget).focus()
         self.load_story()
         self.post_message(StatusUpdate("[b cyan]j/k, up/down[/] to scroll, [b cyan]o[/] to open"))
 
@@ -158,10 +158,10 @@ class StoryViewScreen(Screen):
         md_viewer.show_table_of_contents = not md_viewer.show_table_of_contents
 
     def action_scroll_down(self) -> None:
-        self.query_one("#story-scroll").scroll_y += 1
+        self.query_one("#story-scroll").scroll_down()
 
     def action_scroll_up(self) -> None:
-        self.query_one("#story-scroll").scroll_y -= 1
+        self.query_one("#story-scroll").scroll_up()
 
 
 class BookmarksScreen(Screen):
