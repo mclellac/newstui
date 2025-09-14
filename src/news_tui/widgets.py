@@ -39,6 +39,15 @@ class HeadlineItem(ListItem):
             yield Static(self.story.title, classes="headline-title")
 
 
+class CompactHeadlineItem(ListItem):
+    def __init__(self, story: Story):
+        super().__init__()
+        self.story = story
+
+    def compose(self) -> ComposeResult:
+        yield Static(self.story.title, classes="headline-title")
+
+
 class StatusBar(Static):
     theme_name = reactive("default")
     loading_status = reactive("")

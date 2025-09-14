@@ -30,7 +30,7 @@ from .datamodels import Section, Story
 from .sources.cbc import CBCSource
 from .screens import BookmarksScreen, SettingsScreen, StoryViewScreen
 from .themes import THEMES
-from .widgets import HeadlineItem, SectionListItem, StatusBar
+from .widgets import CompactHeadlineItem, HeadlineItem, SectionListItem, StatusBar
 
 
 class ThemeProvider(Provider):
@@ -181,8 +181,14 @@ class NewsApp(App):
         if not stories:
             headlines_list.display = False
             return
+
+        layout = self.config.get("layout", "default")
         for s in stories:
-            item = HeadlineItem(s)
+            if layout == "compact":
+                item = CompactHeadlineItem(s)
+            else:
+                item = HeadlineItem(s)
+
             if s.read:
                 item.add_class("read")
             headlines_list.append(item)
