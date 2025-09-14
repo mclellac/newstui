@@ -178,10 +178,9 @@ class BookmarksScreen(Screen):
         self.title = "Bookmarks"
         table = self.query_one(DataTable)
         table.add_column("Title", width=50)
-        table.add_column("Summary")
         bookmarks = load_bookmarks()
         for b in bookmarks:
-            table.add_row(b["title"], b["summary"] or "")
+            table.add_row(b["title"])
 
 
 class SettingsScreen(Screen):

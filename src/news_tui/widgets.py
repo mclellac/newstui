@@ -40,25 +40,19 @@ class HeadlineItem(ListItem):
 
 
 class StatusBar(Static):
-    theme_name = reactive("default")
     loading_status = reactive("")
     keybinding_hint = reactive("")
 
     def on_mount(self) -> None:
-        self.set_interval(1, self.update_time)
-        self.theme_name = self.app.theme or "default"
-        self.watch(self.app, "theme", self._on_app_theme_changed)
-
-    def _on_app_theme_changed(self, theme: str) -> None:
-        self.theme_name = theme
+        self.update_display()
 
     def on_status_update(self, message: StatusUpdate) -> None:
         """Listen for status updates and update the hint."""
         self.keybinding_hint = message.text
 
-    def update_time(self) -> None:
-        time_str = datetime.now().strftime("%H:%M:%S")
-        status_items = [f"Theme: {self.theme_name}", time_str]
+    def update_display(self) -> None:
+        """Update the status bar display."""
+        status_items = []
         if self.loading_status:
             status_items.append(self.loading_status)
 
@@ -67,11 +61,8 @@ class StatusBar(Static):
 
         self.update(" | ".join(status_items))
 
-    def watch_theme_name(self, theme_name: str) -> None:
-        self.update_time()
-
     def watch_loading_status(self, loading_status: str) -> None:
-        self.update_time()
+        self.update_display()
 
     def watch_keybinding_hint(self, keybinding_hint: str) -> None:
-        self.update_time()
+        self.update_display()
