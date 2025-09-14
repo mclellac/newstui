@@ -1,71 +1,89 @@
-/* default minimal styling (users can override with theme CSS) */
+/* General App Styling */
 Screen {
-  background: $surface;
-  color: $text;
+    background: $surface;
+    color: $text;
 }
 
 Header {
-  background: $primary;
-  color: $text;
+    background: $primary;
+    color: $text;
 }
 
 Footer {
-  background: $primary-darken-1;
-  color: $text;
+    background: $primary-darken-1;
+    color: $text;
 }
 
+/* Main Layout */
 #main {
-  layout: horizontal;
-  height: 1fr;
-  padding: 1;
+    layout: horizontal;
+    height: 1fr;
+    padding: 1;
+}
+
+#left, #right {
+    border: round $primary;
+    padding: 0 1;
 }
 
 #left {
-  width: 30;
-  padding-right: 1;
-  border: round $primary;
+    width: 30;
 }
 
 #right {
-  width: 1fr;
-  padding-left: 1;
-  border: round $primary;
+    width: 1fr;
 }
 
 .pane-title {
-  text-style: bold;
-  padding: 0 1;
+    text-style: bold;
+    padding: 0 1;
 }
 
+/* Lists */
 ListView {
-  border: none;
+    border: none;
 }
 
 ListItem {
+    padding: 0 1;
 }
 
 ListItem:hover {
-  background: $primary-lighten-2;
+    background: $primary-lighten-2;
 }
 
 ListView > ListItem.--highlighted {
-  background: $accent;
-  color: $text;
+    background: $accent;
+    color: $text;
 }
 
-.summary {
-  color: $text-muted;
-  padding-left: 2;
+/* Headlines */
+HeadlineItem {
+    height: auto;
+    padding: 1;
 }
 
-#story-scroll {
-  padding: 1 5;
+.headline-container {
+    height: auto;
+    align: left middle;
 }
 
-.read .headline-section {
+.headline-section {
+    width: 15;
     color: $text-muted;
 }
 
+.headline-flag {
+    width: 10;
+    color: $warning;
+}
+
+.headline-title {
+    width: 1fr;
+}
+
+/* Read Articles */
+.read .headline-section,
 .read .headline-title {
     color: $text-muted;
     text-style: italic;
@@ -75,7 +93,48 @@ ListView > ListItem.--highlighted {
     opacity: 0.7;
 }
 
-/* Added styles */
+/* Story View */
+#story-scroll {
+    padding: 1 2;
+}
+
+Markdown {
+    background: $surface;
+    padding: 1;
+    width: 100%;
+    height: auto;
+}
+
+Markdown > * {
+    margin: 1 0;
+}
+
+MarkdownH1, MarkdownH2, MarkdownH3, MarkdownH4 {
+    text-style: bold;
+    background: $primary-darken-2;
+    padding: 1;
+    border: round $primary;
+}
+
+MarkdownH1 {
+    width: 100%;
+    text-align: center;
+}
+
+MarkdownBlockquote {
+    margin: 1 0;
+    padding: 0 2;
+    border-left: thick $accent;
+    background: $primary-darken-3;
+}
+
+MarkdownCodeBlock {
+    background: $primary-darken-2;
+    border: round $primary;
+    padding: 1;
+}
+
+/* Other Widgets */
 #headline-filter {
     display: none;
 }
@@ -84,6 +143,7 @@ Input {
     border: tall $background-lighten-2;
     background: $background-darken-1;
 }
+
 Input:focus {
     border: tall $accent;
 }
@@ -91,7 +151,6 @@ Input:focus {
 DataTable {
     border: tall $primary;
     background: $surface;
-    text-wrap: wrap;
 }
 
 DataTable:focus {
@@ -106,72 +165,32 @@ LoadingIndicator {
     color: $accent;
 }
 
-Markdown {
-    background: $surface;
-}
-
-MarkdownH1,
-MarkdownH2,
-MarkdownH3 {
-    text-style: bold;
-}
-
 StatusBar {
     background: $primary-darken-1;
     color: $text;
 }
 
-.summary-text {
-    padding: 1;
-    height: 10;
-}
-
+/* Settings Screen */
 #settings-container {
     layout: horizontal;
     height: 1fr;
     padding: 1;
 }
 
+#settings-left, #settings-right {
+    border: round $primary;
+    padding: 1;
+}
+
 #settings-left {
     width: 1fr;
-    padding-right: 1;
-    border: round $primary;
 }
 
 #settings-right {
     width: 2fr;
-    padding-left: 1;
-    border: round $primary;
 }
 
 #save-settings {
     width: 100%;
     margin: 1 0;
-}
-
-SectionListItem {
-    padding: 0 1;
-}
-
-HeadlineItem {
-    height: auto;
-    padding: 0 1;
-}
-
-.headline-container {
-    height: auto;
-}
-
-.headline-section {
-    width: 15;
-    text-align: left;
-}
-
-.headline-flag {
-    width: 10;
-    text-align: left;
-}
-
-.headline-title {
-    width: 1fr;
 }
