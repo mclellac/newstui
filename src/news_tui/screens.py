@@ -25,10 +25,9 @@ from textual.widgets import (
 )
 
 import os
-from .config import CONFIG_PATH, load_bookmarks, save_config, logger
+from .config import CONFIG_PATH, load_bookmarks, save_config, logger, load_themes
 from .datamodels import Section, Story
 from .sources.cbc import CBCSource
-from .themes import get_theme_names
 from .widgets import SectionCheckbox
 
 # Markdown & scroll fallbacks for different Textual versions
@@ -225,8 +224,8 @@ class SettingsScreen(Screen):
 
         # Set theme selector
         theme_select = self.query_one("#theme-select", Select)
-        themes = get_theme_names()
-        theme_select.set_options([(theme, theme) for theme in themes])
+        themes = load_themes()
+        theme_select.set_options([(theme, theme) for theme in themes.keys()])
         if self.app.theme_name in themes:
             theme_select.value = self.app.theme_name
         else:

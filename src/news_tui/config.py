@@ -122,6 +122,31 @@ def save_config(config: Dict[str, Any]) -> None:
         logger.error("Failed to save config to %s: %s", CONFIG_PATH, e)
 
 
+from textual.theme import Theme
+from .default_themes import DEFAULT_THEMES
+
+def load_themes() -> dict[str, Theme]:
+    """Load themes from default and user config."""
+    config = load_config()
+    user_theme_defs = config.get("themes", {})
+
+    # Start with default themes
+    themes = DEFAULT_THEMES.copy()
+
+    # Create Theme objects from user definitions and merge them
+    for name, definition in user_theme_defs.items():
+        try:
+            # Add the 'name' to the definition dict before creating the Theme
+            definition['name'] = name
+            themes[name] = Theme.from_dict(definition)
+        except Exception as e:
+            # Ignore invalid theme definitions
+            logger.warning("Ignoring invalid theme definition for '%s': %s", name, e)
+            pass
+
+    return themes
+
+
 def load_theme_name_from_config() -> Optional[str]:
     """Return theme name if configured and present; else None."""
     config = load_config()
