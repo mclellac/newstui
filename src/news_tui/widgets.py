@@ -8,7 +8,6 @@ from textual.widgets import Checkbox, ListItem, Static
 from textual.reactive import reactive
 
 from .datamodels import Section, Story
-from .theme_definitions import THEMES
 
 
 class SectionCheckbox(Checkbox):
@@ -58,8 +57,6 @@ class StatusBar(Static):
             status_items.append(self.loading_status)
 
         key_color = "cyan"
-        if self.app.theme in THEMES:
-            key_color = THEMES[self.app.theme].accent
         status_items.append(f"[b {key_color}]ctrl+l[/] to toggle sections")
 
         self.update(" | ".join(status_items))

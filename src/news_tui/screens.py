@@ -28,7 +28,7 @@ import os
 from .config import CONFIG_PATH, load_bookmarks, save_config, logger
 from .datamodels import Section, Story
 from .sources.cbc import CBCSource
-from .theme_definitions import THEMES
+from .themes import get_theme_names
 from .widgets import SectionCheckbox
 
 # Markdown & scroll fallbacks for different Textual versions
@@ -104,8 +104,6 @@ class StoryViewScreen(Screen):
             return
 
         error_color = "red"
-        if self.app.theme in THEMES:
-            error_color = THEMES[self.app.theme].error
 
         # Only act when worker finished (SUCCESS) or otherwise finished (non-running).
         if event.state is WorkerState.SUCCESS:
@@ -220,18 +218,6 @@ class SettingsScreen(Screen):
                 )
         yield Button("Save", id="save-settings")
 
-    def get_available_themes(self) -> list[str]:
-        """Get a list of available themes."""
-        themes_dir = os.path.join(os.path.dirname(CONFIG_PATH), "themes")
-        if not os.path.isdir(themes_dir):
-            return []
-        themes = [
-            f.replace(".css", "")
-            for f in os.listdir(themes_dir)
-            if f.endswith(".css") and f != "app.css"
-        ]
-        return themes
-
     def on_mount(self) -> None:
         """Load sections and populate lists."""
         self.title = "Settings"
@@ -239,10 +225,10 @@ class SettingsScreen(Screen):
 
         # Set theme selector
         theme_select = self.query_one("#theme-select", Select)
-        themes = self.get_available_themes()
+        themes = get_theme_names()
         theme_select.set_options([(theme, theme) for theme in themes])
-        if self.app.theme in themes:
-            theme_select.value = self.app.theme
+        if self.app.theme_name in themes:
+            theme_select.value = self.app.theme_name
         else:
             theme_select.clear()
 
