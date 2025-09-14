@@ -33,7 +33,6 @@ from .datamodels import Section, Story
 from .sources.cbc import CBCSource
 from .screens import BookmarksScreen, SettingsScreen, StoryViewScreen
 from .widgets import HeadlineItem, SectionListItem, StatusBar
-from .messages import StatusUpdate
 
 
 class ThemeProvider(Provider):
@@ -133,7 +132,7 @@ class NewsApp(App):
         # Configure the headlines list
         self.query_one("#headlines-list", ListView).cursor_type = "row"
 
-        self.post_message(StatusUpdate("[b cyan]ctrl+l[/] to toggle sections"))
+        self.query_one(StatusBar).set_keybindings("[b cyan]ctrl+l[/] to toggle sections")
 
     def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
         name = getattr(event.worker, "name", None)

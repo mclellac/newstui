@@ -7,7 +7,6 @@ from textual.containers import Horizontal
 from textual.widgets import Checkbox, ListItem, Static
 from textual.reactive import reactive
 
-from .messages import StatusUpdate
 from .datamodels import Section, Story
 
 
@@ -46,9 +45,9 @@ class StatusBar(Static):
     def on_mount(self) -> None:
         self.update_display()
 
-    def on_status_update(self, message: StatusUpdate) -> None:
-        """Listen for status updates and update the hint."""
-        self.keybinding_hint = message.text
+    def set_keybindings(self, hint: str) -> None:
+        """Set the keybinding hint text."""
+        self.keybinding_hint = hint
 
     def update_display(self) -> None:
         """Update the status bar display."""
