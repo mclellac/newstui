@@ -1,0 +1,76 @@
+/* Amateur Theme */
+$background: #0A1A1A;
+$surface: #142828;
+$primary: #008080;      /* teal */
+$secondary: #40E0D0;    /* turquoise */
+$accent: #00BFFF;       /* deep sky blue */
+$warning: #FFA500;      /* orange */
+$error: #FF4500;        /* orange-red */
+$text: #00FFFF;         /* cyan */
+$text-muted: #008B8B;   /* dark cyan */
+
+Screen {
+    background: $background;
+    color: $text;
+}
+
+Header, Footer {
+    background: $surface;
+    color: $text;
+}
+
+#left, #right {
+    border: round $primary;
+}
+
+ListView > ListItem.--highlighted {
+    background: $primary;
+    color: $background;
+    text-style: bold;
+}
+
+ListItem:hover {
+    background: $text-muted;
+}
+
+DataTable {
+    border: tall $primary;
+}
+
+DataTable:focus {
+    border: tall $accent;
+}
+
+Input {
+    border: tall $surface;
+    background: $background;
+}
+
+Input:focus {
+    border: tall $accent;
+}
+
+Button {
+    background: $primary;
+    color: $background;
+}
+
+Button:hover {
+    background: $accent;
+}
+
+MarkdownH1, MarkdownH2, MarkdownH3, MarkdownH4 {
+    background: $surface;
+    border: round $primary;
+    color: $primary;
+}
+
+MarkdownBlockquote {
+    background: $background;
+    border-left: thick $secondary;
+}
+
+MarkdownCodeBlock {
+    background: $background;
+    border: round $surface;
+}
