@@ -101,7 +101,7 @@ DEFAULT_THEMES = {
     ),
     "green_mono": Theme(
         name="green_mono",
-        primary="#00d000",
+        primary="#00ff00",
         secondary="#008000",
         accent="#00d000",
         foreground="#00d000",
@@ -115,7 +115,7 @@ DEFAULT_THEMES = {
     ),
     "orange_mono": Theme(
         name="orange_mono",
-        primary="#ff8c00",
+        primary="#ffa500",
         secondary="#a05c00",
         accent="#ff8c00",
         foreground="#ff8c00",

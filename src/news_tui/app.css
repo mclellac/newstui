@@ -137,11 +137,6 @@ MarkdownCodeBlock {
     padding: 1;
 }
 
-Markdown a {
-    color: $accent;
-    text-style: underline;
-}
-
 /* Other Widgets */
 #headline-filter {
     display: none;
