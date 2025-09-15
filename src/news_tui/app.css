@@ -37,6 +37,8 @@ Footer {
 .pane-title {
     text-style: bold;
     padding: 0 1;
+    color: $text;
+    background: $primary-darken-1;
 }
 
 /* Lists */
@@ -71,7 +73,7 @@ HeadlineItem {
 
 .headline-section {
     width: 15;
-    color: $text-muted;
+    color: $secondary;
 }
 
 .headline-flag {
@@ -86,7 +88,7 @@ HeadlineItem {
 /* Read Articles */
 .read .headline-section,
 .read .headline-title {
-    color: $text-muted;
+    color: $secondary;
     text-style: italic;
 }
 
@@ -133,6 +135,11 @@ MarkdownCodeBlock {
     background: $primary-darken-2;
     border: round $primary;
     padding: 1;
+}
+
+Markdown a {
+    color: $accent;
+    text-style: underline;
 }
 
 /* Other Widgets */
