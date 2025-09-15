@@ -125,6 +125,24 @@ def save_config(config: Dict[str, Any]) -> None:
 from textual.theme import Theme
 from .default_themes import DEFAULT_THEMES
 
+def _parse_theme_css(css_content: str) -> dict[str, str]:
+    """Parse a CSS file and extract theme colors."""
+    colors = {}
+    for line in css_content.splitlines():
+        line = line.strip()
+        if line.startswith("$"):
+            try:
+                name, value = line.split(":", 1)
+                name = name.strip()[1:]  # remove $
+                value = value.strip().split(";")[0].strip()  # remove ; and comments
+                if "/*" in value:
+                    value = value.split("/*")[0].strip()
+                colors[name] = value
+            except ValueError:
+                pass
+    return colors
+
+
 def load_themes() -> dict[str, Theme]:
     """Load themes from default, packaged, and user config."""
     config = load_config()
@@ -152,15 +170,32 @@ def load_themes() -> dict[str, Theme]:
                 theme_name = os.path.splitext(theme_file.name)[0]
                 try:
                     with importlib.resources.as_file(theme_file) as theme_path:
-                        new_theme = Theme.from_path(theme_path)
-                        new_theme.name = theme_name
-                        themes[theme_name] = new_theme
+                        with open(theme_path, "r") as f:
+                            css_content = f.read()
+                    colors = _parse_theme_css(css_content)
+                    theme_args = {
+                        "name": theme_name,
+                        "primary": colors.get("primary"),
+                        "secondary": colors.get("secondary"),
+                        "accent": colors.get("accent"),
+                        "error": colors.get("error"),
+                        "success": colors.get("success"),
+                        "warning": colors.get("warning"),
+                        "background": colors.get("background"),
+                        "surface": colors.get("surface"),
+                        "panel": colors.get("panel", colors.get("surface")),
+                        "foreground": colors.get("text"),
+                        "dark": True,  # Assume dark themes for now
+                    }
+                    theme_args = {k: v for k, v in theme_args.items() if v is not None}
+                    if "name" in theme_args:
+                        themes[theme_name] = Theme.from_dict(theme_args)
                 except Exception as e:
                     logger.warning(
                         "Ignoring invalid theme file '%s': %s", theme_file.name, e
                     )
     except ModuleNotFoundError:
-        logger.error("Could not find the 'news_tui.packaged_themes' module to load themes from.")
+        logger.error("Could not find 'news_tui.packaged_themes' to load themes.")
 
     return themes
 
