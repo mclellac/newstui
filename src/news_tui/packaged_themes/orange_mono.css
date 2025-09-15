@@ -1,0 +1,77 @@
+/* Orange Monochrome Theme */
+$background: #2b1a00;
+$surface: #3d2b00;
+$primary: #ff8c00;
+$secondary: #a05c00;
+$accent: #ff8c00;
+$warning: #ff8c00;
+$error: #ff8c00;
+$text: #ff8c00;
+$text-muted: #a05c00;
+
+Screen {
+    background: $background;
+    color: $text;
+}
+
+Header, Footer {
+    background: $surface;
+    color: $text;
+}
+
+#left, #right {
+    border: round $primary;
+}
+
+ListView > ListItem.--highlighted {
+    background: $primary;
+    color: $background;
+    text-style: bold;
+}
+
+ListItem:hover {
+    background: $text-muted;
+    color: $background;
+}
+
+DataTable {
+    border: tall $primary;
+}
+
+DataTable:focus {
+    border: tall $accent;
+}
+
+Input {
+    border: tall $surface;
+    background: $background;
+}
+
+Input:focus {
+    border: tall $accent;
+}
+
+Button {
+    background: $primary;
+    color: $background;
+}
+
+Button:hover {
+    background: $primary-lighten-1;
+}
+
+MarkdownH1, MarkdownH2, MarkdownH3, MarkdownH4 {
+    background: $surface;
+    border: round $primary;
+    color: $primary;
+}
+
+MarkdownBlockquote {
+    background: $background;
+    border-left: thick $secondary;
+}
+
+MarkdownCodeBlock {
+    background: $background;
+    border: round $surface;
+}

@@ -126,7 +126,7 @@ from textual.theme import Theme
 from .default_themes import DEFAULT_THEMES
 
 def load_themes() -> dict[str, Theme]:
-    """Load themes from default and user config."""
+    """Load themes from default, packaged, and user config."""
     config = load_config()
     user_theme_defs = config.get("themes", {})
 
@@ -137,12 +137,30 @@ def load_themes() -> dict[str, Theme]:
     for name, definition in user_theme_defs.items():
         try:
             # Add the 'name' to the definition dict before creating the Theme
-            definition['name'] = name
+            definition["name"] = name
             themes[name] = Theme.from_dict(definition)
         except Exception as e:
             # Ignore invalid theme definitions
             logger.warning("Ignoring invalid theme definition for '%s': %s", name, e)
             pass
+
+    # Load packaged themes from CSS files
+    try:
+        theme_files = importlib.resources.files("news_tui.packaged_themes")
+        for theme_file in theme_files.iterdir():
+            if theme_file.is_file() and theme_file.name.endswith(".css"):
+                theme_name = os.path.splitext(theme_file.name)[0]
+                try:
+                    with importlib.resources.as_file(theme_file) as theme_path:
+                        new_theme = Theme.from_path(theme_path)
+                        new_theme.name = theme_name
+                        themes[theme_name] = new_theme
+                except Exception as e:
+                    logger.warning(
+                        "Ignoring invalid theme file '%s': %s", theme_file.name, e
+                    )
+    except ModuleNotFoundError:
+        logger.error("Could not find the 'news_tui.packaged_themes' module to load themes from.")
 
     return themes
 
