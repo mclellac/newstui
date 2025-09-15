@@ -24,6 +24,8 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+include = ["news_tui*", "config*"]
 
 [tool.setuptools.package-data]
 "news_tui" = ["app.css", "packaged_themes/*.css"]
+"config.news" = ["*.json"]

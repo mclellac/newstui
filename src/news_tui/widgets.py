@@ -6,6 +6,7 @@ from textual.app import ComposeResult
 from textual.containers import Horizontal
 from textual.widgets import Checkbox, ListItem, Static
 from textual.reactive import reactive
+from rich.text import Text
 
 from .datamodels import Section, Story
 
@@ -65,3 +66,8 @@ class StatusBar(Static):
 
     def watch_keybinding_hint(self, keybinding_hint: str) -> None:
         self.update_display()
+
+
+class ErrorMessage(Static):
+    def __init__(self, message: str):
+        super().__init__(Text(message, style="bold red"))

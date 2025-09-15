@@ -35,7 +35,7 @@ from .config import (
     load_themes,
 )
 from .datamodels import Section, Story
-from .sources.cbc import CBCSource
+from .sources.base import Source
 from .widgets import SectionCheckbox
 
 # Markdown & scroll fallbacks for different Textual versions
@@ -58,11 +58,10 @@ class StoryViewScreen(Screen):
         Binding("up", "scroll_up", "Scroll Up"),
     ]
 
-    def __init__(self, story: Story, source: CBCSource, section: Section):
+    def __init__(self, story: Story, source: Source):
         super().__init__()
         self.story = story
         self.source = source
-        self.section = section
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -94,7 +93,7 @@ class StoryViewScreen(Screen):
             pass
         # fetch in worker thread
         self.run_worker(
-            lambda: self.source.get_story_content(self.story, self.section),
+            lambda: self.source.get_story_content(self.story),
             name="story_loader",
             thread=True,
         )
@@ -137,7 +136,13 @@ class StoryViewScreen(Screen):
                     self.query_one("#story-loading", LoadingIndicator).display = False
                     self.query_one("#story-scroll").display = True
                     md = self.query_one("#story-markdown")
-                    md.update(f"[b {error_color}]Unable to load article[/]")
+                    error = getattr(event.worker, "error", None)
+                    if error:
+                        logger.error("Story loader worker failed: %s", error)
+                        md.update(f"[b {error_color}]Unable to load article: {error}[/]")
+                    else:
+                        logger.error("Story loader worker failed with no specific error.")
+                        md.update(f"[b {error_color}]Unable to load article[/]")
                 except Exception:
                     pass
 
@@ -152,6 +157,22 @@ class StoryViewScreen(Screen):
 
     def action_scroll_up(self) -> None:
         self.query_one("#story-scroll").scroll_up()
+
+
+class ErrorScreen(Screen):
+    def __init__(self, title: str, message: str):
+        super().__init__()
+        self.title = title
+        self.message = message
+
+    def compose(self) -> ComposeResult:
+        yield Header()
+        yield Label(self.title, classes="error-title")
+        yield Markdown(self.message)
+        yield Footer()
+
+    def on_mount(self) -> None:
+        self.bind("q", "quit", "Quit")
 
 
 class BookmarksScreen(Screen):
