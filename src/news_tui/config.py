@@ -154,24 +154,20 @@ def load_themes() -> dict[str, Theme]:
     # Create Theme objects from user definitions and merge them
     for name, definition in user_theme_defs.items():
         try:
-            # Add the 'name' to the definition dict before creating the Theme
             definition["name"] = name
             themes[name] = Theme.from_dict(definition)
         except Exception as e:
-            # Ignore invalid theme definitions
             logger.warning("Ignoring invalid theme definition for '%s': %s", name, e)
             pass
 
     # Load packaged themes from CSS files
     try:
-        theme_files = importlib.resources.files("news_tui.packaged_themes")
-        for theme_file in theme_files.iterdir():
+        theme_files_path = importlib.resources.files("news_tui.packaged_themes")
+        for theme_file in theme_files_path.iterdir():
             if theme_file.is_file() and theme_file.name.endswith(".css"):
                 theme_name = os.path.splitext(theme_file.name)[0]
                 try:
-                    with importlib.resources.as_file(theme_file) as theme_path:
-                        with open(theme_path, "r") as f:
-                            css_content = f.read()
+                    css_content = theme_file.read_text(encoding="utf-8")
                     colors = _parse_theme_css(css_content)
                     theme_args = {
                         "name": theme_name,
@@ -185,7 +181,7 @@ def load_themes() -> dict[str, Theme]:
                         "surface": colors.get("surface"),
                         "panel": colors.get("panel", colors.get("surface")),
                         "foreground": colors.get("text"),
-                        "dark": True,  # Assume dark themes for now
+                        "dark": True,
                     }
                     theme_args = {k: v for k, v in theme_args.items() if v is not None}
                     if "name" in theme_args:
