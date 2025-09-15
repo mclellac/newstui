@@ -22,17 +22,16 @@ from ..config import (
     REQUEST_HEADERS,
     RETRY_ATTEMPTS,
     SECTIONS_PAGE_URL,
-    load_read_articles,
-    load_bookmarks,
 )
 from ..datamodels import Section, Story
+from .base import Source
 
 logger = logging.getLogger("news")
 
 
-class CBCSource:
+class CBCSource(Source):
     def __init__(self, config: Dict[str, Any]):
-        self.config = config
+        super().__init__(config)
         self.session = self._create_session()
 
     def _create_session(self) -> requests.Session:
@@ -88,10 +87,7 @@ class CBCSource:
                 logger.debug("Failed parsing sections from %s: %s", url, e)
         return [Section("Home", HOME_PAGE_URL)] + list(sections_map.values())
 
-    def get_stories(
-        self, section: Section, read_articles: set[str], bookmarks: list[dict]
-    ) -> List[Story]:
-        bookmarked_urls = {b["url"] for b in bookmarks}
+    def get_stories(self, section: Section) -> List[Story]:
         content = self._retryable_fetch(section.url)
         if not content:
             return []
@@ -114,8 +110,6 @@ class CBCSource:
                             section=section.title,
                             flag=flag,
                             summary=summary,
-                            read=href in read_articles,
-                            bookmarked=href in bookmarked_urls,
                         )
                     )
             return _unique_ordered_stories(stories)
@@ -123,7 +117,7 @@ class CBCSource:
             logger.error("Failed to parse stories from %s: %s", section.url, e)
             return []
 
-    def get_story_content(self, story: Story, section: Section) -> Dict[str, Any]:
+    def get_story_content(self, story: Story) -> Dict[str, Any]:
         content_bytes = self._retryable_fetch(story.url)
         if not content_bytes:
             return {"ok": False, "content": "Failed to fetch article."}

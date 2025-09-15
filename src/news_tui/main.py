@@ -9,7 +9,6 @@ import sys
 from typing import Optional
 
 from .app import NewsApp
-from .config import enable_debug_log_to_tmp, load_config
 from .config import enable_debug_log_to_tmp, load_config, load_themes
 
 logger = logging.getLogger("news")

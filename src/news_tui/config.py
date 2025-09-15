@@ -30,6 +30,11 @@ RETRY_ATTEMPTS = 4
 INITIAL_RETRY_DELAY = 0.5
 PLACEHOLDER_PATTERN = re.compile(r"\b(loading|unable to load|error|retrying)\b", re.I)
 
+# Default UI settings
+UI_DEFAULTS = {
+    "statusbar_keybindings": "[b cyan]ctrl+l[/] to toggle sections",
+}
+
 # --- Logging ---
 logging.basicConfig(
     level=logging.INFO,
@@ -96,11 +101,20 @@ def save_bookmarks(bookmarks: list[dict]) -> None:
         pass
 
 
+def ensure_config_file_exists() -> None:
+    """Copy the default config file if the user's config file is not found."""
+    if not os.path.exists(CONFIG_PATH):
+        logger.info("Config file not found at %s, creating default.", CONFIG_PATH)
+        try:
+            os.makedirs(os.path.dirname(CONFIG_PATH), exist_ok=True)
+            with importlib.resources.path("config.news", "config.json") as default_config_path:
+                shutil.copy(default_config_path, CONFIG_PATH)
+        except (IOError, OSError) as e:
+            logger.error("Failed to create default config file: %s", e)
+
 def load_config() -> Dict[str, Any]:
     """Load the main configuration file."""
-    if not os.path.exists(CONFIG_PATH):
-        logger.info("Config file not found at %s", CONFIG_PATH)
-        return {}
+    ensure_config_file_exists()
     try:
         with open(CONFIG_PATH, "r") as f:
             config = json.load(f)
