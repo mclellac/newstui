@@ -141,4 +141,18 @@ DEFAULT_THEMES = {
         error="#e5534b",
         dark=True,
     ),
+    "amateur": Theme(
+        name="amateur",
+        primary="#008080",      # teal
+        secondary="#40E0D0",    # turquoise
+        accent="#00BFFF",       # deep sky blue
+        foreground="#00FFFF",   # cyan
+        background="#0A1A1A",   # very dark teal
+        surface="#142828",      # dark teal surface
+        panel="#142828",        # same as surface
+        success="#2E8B57",      # seafoam green
+        warning="#FFA500",      # orange
+        error="#FF4500",        # orange-red
+        dark=True,
+    ),
 }
