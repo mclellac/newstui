@@ -236,11 +236,15 @@ class SettingsScreen(Screen):
                 yield ListView(id="sections-list")
             with TabPane("Meta Sections", id="meta-sections-tab"):
                 with Vertical():
-                    yield Label("Meta Section Name")
+                    yield Label("Meta Section Name", classes="settings-label")
                     yield Input(placeholder="e.g. My Awesome Feed", id="meta-section-name")
-                    yield Label("Constituent Sections")
+                    yield Label("Constituent Sections", classes="settings-label")
                     yield ListView(id="meta-sections-constituents")
-                    yield Button("Create Meta Section", id="create-meta-section")
+                    yield Button(
+                        "Create Meta Section",
+                        id="create-meta-section",
+                        classes="settings-button",
+                    )
             with TabPane("Theme", id="theme-tab"):
                 yield Select([], id="theme-select", prompt="Select a theme")
             with TabPane("Layout", id="layout-tab"):
@@ -249,7 +253,7 @@ class SettingsScreen(Screen):
                     id="layout-select",
                     prompt="Select an article list layout",
                 )
-        yield Button("Save", id="save-settings")
+        yield Button("Save", id="save-settings", classes="settings-button")
 
     def on_mount(self) -> None:
         """Load sections and populate lists."""
