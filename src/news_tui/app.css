@@ -195,3 +195,31 @@ StatusBar {
     width: 100%;
     margin: 1 0;
 }
+
+.settings-label {
+    color: $text-muted;
+}
+
+.settings-button {
+    background: $accent;
+    color: $surface;
+}
+
+Select {
+    background: $primary;
+    color: $text;
+    border: tall $primary;
+    padding: 0 1;
+}
+
+Select:focus {
+    border: tall $accent;
+}
+
+Checkbox {
+    background: $surface;
+}
+
+Checkbox > .toggle--button {
+    color: $accent;
+}
