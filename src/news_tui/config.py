@@ -36,27 +36,26 @@ UI_DEFAULTS = {
 }
 
 # --- Logging ---
-logging.basicConfig(
-    level=logging.INFO,
-    filename="newstui.log",
-    filemode="a",
-    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-)
 logger = logging.getLogger("news")
 
+def setup_logging(debug: bool = False) -> Optional[str]:
+    """Configure logging."""
+    if not debug:
+        logging.basicConfig(level=logging.CRITICAL, handlers=[logging.NullHandler()])
+        return None
 
-def enable_debug_log_to_tmp() -> str:
     ts = datetime.now().strftime("%Y%m%dT%H%M%S")
     pid = os.getpid()
     debug_path = f"/tmp/news_debug_{ts}_{pid}.log"
-    fh = logging.FileHandler(debug_path, mode="a")
-    fh.setLevel(logging.DEBUG)
-    fmt = logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
-    fh.setFormatter(fmt)
-    logger.addHandler(fh)
-    logging.getLogger().addHandler(fh)
-    logger.setLevel(logging.DEBUG)
-    logging.getLogger().setLevel(logging.DEBUG)
+
+    # Use basicConfig to set up the root logger with a file handler
+    logging.basicConfig(
+        level=logging.DEBUG,
+        filename=debug_path,
+        filemode="a",
+        format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+    )
+
     logger.debug("Debug logging enabled to %s", debug_path)
     return debug_path
 
