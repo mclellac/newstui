@@ -9,7 +9,7 @@ import sys
 from typing import Optional
 
 from .app import NewsApp
-from .config import enable_debug_log_to_tmp, load_config, load_themes
+from .config import load_config, load_themes, setup_logging
 
 logger = logging.getLogger("news")
 
@@ -28,8 +28,8 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    if args.debug:
-        debug_path = enable_debug_log_to_tmp()
+    debug_path = setup_logging(args.debug)
+    if debug_path:
         print(f"Debug logging enabled: {debug_path}", file=sys.stderr)
 
     config = load_config()
