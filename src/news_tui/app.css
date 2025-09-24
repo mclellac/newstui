@@ -74,17 +74,17 @@ HeadlineItem {
 
 .headline-section {
     width: 15;
-    color: $secondary-darken-2;
+    color: $secondary;
 }
 
 .headline-flag {
     width: 10;
-    color: $warning-darken-2;
+    color: $warning;
 }
 
 .headline-title {
     width: 1fr;
-    color: $secondary-lighten-2;
+    color: $text;
 }
 
 /* Read Articles */
