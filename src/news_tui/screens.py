@@ -65,7 +65,6 @@ class StoryViewScreen(Screen):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        yield StatusBar()
         # loading indicator and scrollable Markdown
         loading = LoadingIndicator(id="story-loading")
         yield loading
@@ -73,6 +72,7 @@ class StoryViewScreen(Screen):
             MarkdownWidget("", id="story-markdown"),
             id="story-scroll",
         )
+        yield StatusBar()
 
     def on_mount(self) -> None:
         self.title = self.story.title
