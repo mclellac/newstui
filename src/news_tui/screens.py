@@ -83,6 +83,12 @@ class StoryViewScreen(Screen):
             pass
         self.query_one("#story-scroll").focus()
         self.load_story()
+        self.app.apply_theme_styles(self)
+
+        keybinding_style = self.app.get_keybinding_style()
+        self.query_one(Footer).set_keybindings(
+            f"[b {keybinding_style}]up/down[/] to scroll, [b {keybinding_style}]o[/] to open"
+        )
 
         keybinding_style = self.app.get_keybinding_style()
         self.app.query_one(Footer).set_keybindings(
@@ -198,6 +204,7 @@ class BookmarksScreen(Screen):
         table.add_column("Title", key="title")
         for bookmark in self.bookmarks:
             table.add_row(bookmark["title"], key=bookmark["url"])
+        self.app.apply_theme_styles(self)
 
     def action_delete_bookmark(self) -> None:
         """Delete the selected bookmark."""
@@ -276,6 +283,7 @@ class SettingsScreen(Screen):
         # Set layout selector
         layout_select = self.query_one("#layout-select", Select)
         layout_select.value = self.app.config.get("layout", "default")
+        self.app.apply_theme_styles(self)
 
     def on_input_changed(self, event: Input.Changed) -> None:
         if event.input.id == "meta-section-name":
