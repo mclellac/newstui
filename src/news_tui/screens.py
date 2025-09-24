@@ -90,11 +90,6 @@ class StoryViewScreen(Screen):
             f"[b {keybinding_style}]up/down[/] to scroll, [b {keybinding_style}]o[/] to open"
         )
 
-        keybinding_style = self.app.get_keybinding_style()
-        self.app.query_one(Footer).set_keybindings(
-            f"[b {keybinding_style}]up/down[/] to scroll, [b {keybinding_style}]o[/] to open"
-        )
-
     def load_story(self) -> None:
         try:
             self.query_one("#story-loading", LoadingIndicator).display = True
