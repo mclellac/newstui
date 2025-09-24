@@ -36,7 +36,7 @@ from .config import (
 )
 from .datamodels import Section, Story
 from .sources.base import Source
-from .widgets import SectionCheckbox
+from .widgets import SectionCheckbox, StatusBar
 
 # Markdown & scroll fallbacks for different Textual versions
 MarkdownWidget = Markdown
@@ -65,7 +65,7 @@ class StoryViewScreen(Screen):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Footer()
+        yield StatusBar()
         # loading indicator and scrollable Markdown
         loading = LoadingIndicator(id="story-loading")
         yield loading
@@ -86,7 +86,7 @@ class StoryViewScreen(Screen):
         self.app.apply_theme_styles(self)
 
         keybinding_style = self.app.get_keybinding_style()
-        self.query_one(Footer).set_keybindings(
+        self.query_one(StatusBar).set_keybindings(
             f"[b {keybinding_style}]up/down[/] to scroll, [b {keybinding_style}]o[/] to open"
         )
 
