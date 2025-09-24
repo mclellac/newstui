@@ -70,4 +70,5 @@ class StatusBar(Static):
 
 class ErrorMessage(Static):
     def __init__(self, message: str):
-        super().__init__(Text(message, style="bold red"))
+        super().__init__(Text(message))
+        self.styles.color = "$error"

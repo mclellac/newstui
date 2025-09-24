@@ -144,7 +144,7 @@ DEFAULT_THEMES = {
     "cbc-light": Theme(
         name="cbc-light",
         primary="#ee0000",
-        secondary="#dcdcdc",
+        secondary="#a9a9a9",
         accent="#ee0000",
         foreground="#000000",
         background="#ffffff",
@@ -158,12 +158,12 @@ DEFAULT_THEMES = {
     "cbc-dark": Theme(
         name="cbc-dark",
         primary="#ee0000",
-        secondary="#c1c1c1",
+        secondary="#d3d3d3",
         accent="#ee0000",
         foreground="#ffffff",
         background="#000000",
         surface="#202020",
-        panel="#494949",
+        panel="#303030",
         success="#50fa7b",
         warning="#f1fa8c",
         error="#ff5555",

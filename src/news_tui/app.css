@@ -51,7 +51,8 @@ ListItem {
 }
 
 ListItem:hover {
-    background: $primary-lighten-2;
+    background: $accent;
+    color: $text;
 }
 
 ListView > ListItem.--highlighted {
