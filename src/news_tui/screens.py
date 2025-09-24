@@ -83,7 +83,10 @@ class StoryViewScreen(Screen):
             pass
         self.query_one("#story-scroll").focus()
         self.load_story()
-        self.app.query_one("StatusBar").set_keybindings("[b $accent]up/down[/] to scroll, [b $accent]o[/] to open")
+        keybinding_style = self.app.get_keybinding_style()
+        self.app.query_one("StatusBar").set_keybindings(
+            f"[b {keybinding_style}]up/down[/] to scroll, [b {keybinding_style}]o[/] to open"
+        )
 
     def load_story(self) -> None:
         try:

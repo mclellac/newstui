@@ -74,16 +74,17 @@ HeadlineItem {
 
 .headline-section {
     width: 15;
-    color: $secondary;
+    color: $secondary-darken-2;
 }
 
 .headline-flag {
     width: 10;
-    color: $warning;
+    color: $warning-darken-2;
 }
 
 .headline-title {
     width: 1fr;
+    color: $secondary-lighten-2;
 }
 
 /* Read Articles */
@@ -115,9 +116,9 @@ Markdown > * {
 
 MarkdownH1, MarkdownH2, MarkdownH3, MarkdownH4 {
     text-style: bold;
-    background: $primary-darken-2;
+    background: $accent-darken-2;
     padding: 1;
-    border: round $primary;
+    border: round $accent;
 }
 
 MarkdownH1 {
@@ -129,12 +130,12 @@ MarkdownBlockquote {
     margin: 1 0;
     padding: 0 2;
     border-left: thick $accent;
-    background: $primary-darken-3;
+    background: $accent-darken-3;
 }
 
 MarkdownCodeBlock {
-    background: $primary-darken-2;
-    border: round $primary;
+    background: $accent-darken-2;
+    border: round $accent;
     padding: 1;
 }
 
@@ -224,5 +225,20 @@ Checkbox {
 }
 
 Checkbox > .toggle--button {
+    color: $accent;
+}
+
+/* CBC Theme Overrides */
+.cbc-header, .cbc-footer {
+    background: #ee0000;
+    color: white;
+}
+
+MarkdownListItem {
+    color: $secondary;
+}
+
+MarkdownLink {
+    text-style: underline;
     color: $accent;
 }
