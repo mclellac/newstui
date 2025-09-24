@@ -122,9 +122,6 @@ class NewsApp(App):
                 pass  # Not all screens have a footer
 
 
-    def on_ready(self) -> None:
-        """Called when the app is ready to run."""
-        self.theme = self._theme_name
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -150,6 +147,9 @@ class NewsApp(App):
         self.themes = load_themes()
         for name, theme in self.themes.items():
             self.register_theme(theme)
+
+        self.theme = self._theme_name
+        self.apply_theme_styles(self.screen)
 
         if not self.source:
             self.push_screen(
@@ -423,8 +423,9 @@ class NewsApp(App):
 
     def watch_theme(self, old_theme: str, new_theme: str) -> None:
         """Apply theme-specific styles."""
-        for screen in self.screens.values():
-            self.apply_theme_styles(screen)
+        if hasattr(self, "screens"):
+            for screen in self.screens.values():
+                self.apply_theme_styles(screen)
 
     def action_toggle_left_pane(self) -> None:
         """Toggle the left pane."""
