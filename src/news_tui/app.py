@@ -101,10 +101,30 @@ class NewsApp(App):
             return "#ff5555"
         return "$accent"
 
-    def set_initial_theme(self) -> None:
-        """Set the initial theme."""
-        self.theme = self._theme_name
+    def apply_theme_styles(self, screen) -> None:
+        """Apply theme-specific styles to a screen."""
+        is_cbc = self.theme_name.startswith("cbc-")
+        try:
+            header = screen.query_one(Header)
+            header.set_class(is_cbc, "cbc-header")
+        except Exception:
+            pass  # Not all screens have a header
 
+        try:
+            # The main app screen has a StatusBar, others have a Footer.
+            footer = screen.query_one(StatusBar)
+            footer.set_class(is_cbc, "cbc-footer")
+        except Exception:
+            try:
+                footer = screen.query_one(Footer)
+                footer.set_class(is_cbc, "cbc-footer")
+            except Exception:
+                pass  # Not all screens have a footer
+
+
+    def on_ready(self) -> None:
+        """Called when the app is ready to run."""
+        self.theme = self._theme_name
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -130,9 +150,6 @@ class NewsApp(App):
         self.themes = load_themes()
         for name, theme in self.themes.items():
             self.register_theme(theme)
-
-        # Set the theme
-        self.call_after_refresh(self.set_initial_theme)
 
         if not self.source:
             self.push_screen(
@@ -406,24 +423,8 @@ class NewsApp(App):
 
     def watch_theme(self, old_theme: str, new_theme: str) -> None:
         """Apply theme-specific styles."""
-        is_cbc = new_theme.startswith("cbc-")
         for screen in self.screens.values():
-            try:
-                header = screen.query_one(Header)
-                header.set_class(is_cbc, "cbc-header")
-            except Exception:
-                pass  # Not all screens have a header
-
-            try:
-                # The main app screen has a StatusBar, others have a Footer.
-                footer = screen.query_one(StatusBar)
-                footer.set_class(is_cbc, "cbc-footer")
-            except Exception:
-                try:
-                    footer = screen.query_one(Footer)
-                    footer.set_class(is_cbc, "cbc-footer")
-                except Exception:
-                    pass  # Not all screens have a footer
+            self.apply_theme_styles(screen)
 
     def action_toggle_left_pane(self) -> None:
         """Toggle the left pane."""
