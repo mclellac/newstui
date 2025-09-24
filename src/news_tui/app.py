@@ -95,6 +95,12 @@ class NewsApp(App):
     def theme_name(self) -> str:
         return self._theme_name
 
+    def get_keybinding_style(self) -> str:
+        """Return the appropriate keybinding style for the current theme."""
+        if self.theme_name.startswith("cbc-"):
+            return "white"
+        return "$accent"
+
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -147,7 +153,9 @@ class NewsApp(App):
         keybindings_text = self.config.get("ui", {}).get(
             "statusbar_keybindings", UI_DEFAULTS["statusbar_keybindings"]
         )
-        self.query_one(StatusBar).set_keybindings(keybindings_text)
+        self.query_one(StatusBar).set_keybindings(
+            keybindings_text.format(color=self.get_keybinding_style())
+        )
 
     def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
         name = getattr(event.worker, "name", None)
@@ -391,6 +399,17 @@ class NewsApp(App):
     def action_switch_theme(self, theme: str) -> None:
         """Switch to a new theme."""
         self.theme = theme
+
+    def watch_theme(self, old_theme: str, new_theme: str) -> None:
+        """Apply theme-specific styles."""
+        header = self.query_one(Header)
+        footer = self.query_one(StatusBar)
+        if new_theme.startswith("cbc-"):
+            header.add_class("cbc-header")
+            footer.add_class("cbc-footer")
+        else:
+            header.remove_class("cbc-header")
+            footer.remove_class("cbc-footer")
 
     def action_toggle_left_pane(self) -> None:
         """Toggle the left pane."""
