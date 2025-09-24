@@ -127,20 +127,6 @@ DEFAULT_THEMES = {
         error="#ff8c00",
         dark=True,
     ),
-    "hacker": Theme(
-        name="hacker",
-        primary="#00e0e0",
-        secondary="#008080",
-        accent="#00e0e0",
-        foreground="#c9d1d9",
-        background="#0d1117",
-        surface="#161b22",
-        panel="#161b22",
-        success="#00e0e0",
-        warning="#e2a900",
-        error="#e5534b",
-        dark=True,
-    ),
     "amateur": Theme(
         name="amateur",
         primary="#008080",      # teal
@@ -153,6 +139,34 @@ DEFAULT_THEMES = {
         success="#2E8B57",      # seafoam green
         warning="#FFA500",      # orange
         error="#FF4500",        # orange-red
+        dark=True,
+    ),
+    "cbc-light": Theme(
+        name="cbc-light",
+        primary="#ebebeb",
+        secondary="#dcdcdc",
+        accent="#ee0000",
+        foreground="#000000",
+        background="#ffffff",
+        surface="#f0f0f0",
+        panel="#dcdcdc",
+        success="#26a269",
+        warning="#f8e45c",
+        error="#c01c28",
+        dark=False,
+    ),
+    "cbc-dark": Theme(
+        name="cbc-dark",
+        primary="#494949",
+        secondary="#c1c1c1",
+        accent="#ee0000",
+        foreground="#ffffff",
+        background="#000000",
+        surface="#202020",
+        panel="#494949",
+        success="#50fa7b",
+        warning="#f1fa8c",
+        error="#ff5555",
         dark=True,
     ),
 }
