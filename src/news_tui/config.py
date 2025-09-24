@@ -32,7 +32,7 @@ PLACEHOLDER_PATTERN = re.compile(r"\b(loading|unable to load|error|retrying)\b",
 
 # Default UI settings
 UI_DEFAULTS = {
-    "statusbar_keybindings": "[b cyan]ctrl+l[/] to toggle sections",
+    "statusbar_keybindings": "[b $accent]ctrl+l[/] to toggle sections",
 }
 
 # --- Logging ---

@@ -83,7 +83,7 @@ class StoryViewScreen(Screen):
             pass
         self.query_one("#story-scroll").focus()
         self.load_story()
-        self.app.query_one("StatusBar").set_keybindings("[b cyan]up/down[/] to scroll, [b cyan]o[/] to open")
+        self.app.query_one("StatusBar").set_keybindings("[b $accent]up/down[/] to scroll, [b $accent]o[/] to open")
 
     def load_story(self) -> None:
         try:
@@ -101,8 +101,6 @@ class StoryViewScreen(Screen):
     def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
         if getattr(event.worker, "name", None) != "story_loader":
             return
-
-        error_color = "red"
 
         # Only act when worker finished (SUCCESS) or otherwise finished (non-running).
         if event.state is WorkerState.SUCCESS:
@@ -128,7 +126,8 @@ class StoryViewScreen(Screen):
                     if isinstance(result, dict)
                     else "Unable to load article."
                 )
-                md.update(f"[b {error_color}]{msg}[/]")
+                md.styles.color = "$error"
+                md.update(f"[b]{msg}[/b]")
         else:
             # worker not SUCCESS; if it's not running/pending treat as failure
             if event.state not in (WorkerState.PENDING, WorkerState.RUNNING):
@@ -136,13 +135,14 @@ class StoryViewScreen(Screen):
                     self.query_one("#story-loading", LoadingIndicator).display = False
                     self.query_one("#story-scroll").display = True
                     md = self.query_one("#story-markdown")
+                    md.styles.color = "$error"
                     error = getattr(event.worker, "error", None)
                     if error:
                         logger.error("Story loader worker failed: %s", error)
-                        md.update(f"[b {error_color}]Unable to load article: {error}[/]")
+                        md.update(f"[b]Unable to load article: {error}[/b]")
                     else:
                         logger.error("Story loader worker failed with no specific error.")
-                        md.update(f"[b {error_color}]Unable to load article[/]")
+                        md.update("[b]Unable to load article[/b]")
                 except Exception:
                     pass
 
