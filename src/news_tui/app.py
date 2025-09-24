@@ -98,7 +98,7 @@ class NewsApp(App):
     def get_keybinding_style(self) -> str:
         """Return the appropriate keybinding style for the current theme."""
         if self.theme_name.startswith("cbc-"):
-            return "#ff5555"
+            return "white"
         return "$accent"
 
     def apply_theme_styles(self, screen) -> None:
