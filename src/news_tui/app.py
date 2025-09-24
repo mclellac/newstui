@@ -98,7 +98,7 @@ class NewsApp(App):
     def get_keybinding_style(self) -> str:
         """Return the appropriate keybinding style for the current theme."""
         if self.theme_name.startswith("cbc-"):
-            return "white"
+            return "#ff5555"
         return "$accent"
 
 
@@ -402,14 +402,24 @@ class NewsApp(App):
 
     def watch_theme(self, old_theme: str, new_theme: str) -> None:
         """Apply theme-specific styles."""
-        header = self.query_one(Header)
-        footer = self.query_one(StatusBar)
-        if new_theme.startswith("cbc-"):
-            header.add_class("cbc-header")
-            footer.add_class("cbc-footer")
-        else:
-            header.remove_class("cbc-header")
-            footer.remove_class("cbc-footer")
+        is_cbc = new_theme.startswith("cbc-")
+        for screen in self.screens.values():
+            try:
+                header = screen.query_one(Header)
+                header.set_class(is_cbc, "cbc-header")
+            except Exception:
+                pass  # Not all screens have a header
+
+            try:
+                # The main app screen has a StatusBar, others have a Footer.
+                footer = screen.query_one(StatusBar)
+                footer.set_class(is_cbc, "cbc-footer")
+            except Exception:
+                try:
+                    footer = screen.query_one(Footer)
+                    footer.set_class(is_cbc, "cbc-footer")
+                except Exception:
+                    pass  # Not all screens have a footer
 
     def action_toggle_left_pane(self) -> None:
         """Toggle the left pane."""
