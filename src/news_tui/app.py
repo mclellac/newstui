@@ -101,6 +101,10 @@ class NewsApp(App):
             return "#ff5555"
         return "$accent"
 
+    def set_initial_theme(self) -> None:
+        """Set the initial theme."""
+        self.theme = self._theme_name
+
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -128,7 +132,7 @@ class NewsApp(App):
             self.register_theme(theme)
 
         # Set the theme
-        self.theme = self._theme_name
+        self.call_after_refresh(self.set_initial_theme)
 
         if not self.source:
             self.push_screen(
